@@ -65,39 +65,74 @@
 
   const PERIODO_MAX_DIAS = 7;
 
-  function hojeIso() {
-    return new Date().toISOString().slice(0, 10);
+  function hojeIsoLocal() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   }
 
-  function parseIsoDate(s) {
-    if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
-    const [y, m, d] = s.split('-').map(Number);
-    return new Date(Date.UTC(y, m - 1, d));
+  function normalizarDataIso(s) {
+    if (s == null || s === '') return null;
+    const t = String(s).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(t)) return t;
+    const isoLike = t.match(/^(\d{4})[/.-](\d{1,2})[/.-](\d{1,2})$/);
+    if (isoLike) {
+      const y = isoLike[1];
+      const m = String(isoLike[2]).padStart(2, '0');
+      const d = String(isoLike[3]).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+    const slash = t.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/);
+    if (slash) {
+      const a = Number(slash[1]);
+      const b = Number(slash[2]);
+      const y = slash[3];
+      const month = a > 12 ? b : b > 12 ? a : b;
+      const day = a > 12 ? a : b > 12 ? b : a;
+      return `${y}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    }
+    return null;
+  }
+
+  function parseDataLocal(iso) {
+    const n = normalizarDataIso(iso);
+    if (!n) return null;
+    const [y, m, d] = n.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  }
+
+  function formatarDataLocal(dt) {
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth() + 1).padStart(2, '0');
+    const day = String(dt.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   }
 
   function addDiasIso(iso, delta) {
-    const dt = parseIsoDate(iso);
-    if (!dt) return iso;
-    dt.setUTCDate(dt.getUTCDate() + delta);
-    return dt.toISOString().slice(0, 10);
+    const dt = parseDataLocal(iso);
+    if (!dt) return normalizarDataIso(iso);
+    dt.setDate(dt.getDate() + delta);
+    return formatarDataLocal(dt);
   }
 
   function diasNoPeriodo(ini, fim) {
-    const a = parseIsoDate(ini);
-    const b = parseIsoDate(fim);
-    if (!a || !b) return 0;
+    const a = parseDataLocal(ini);
+    const b = parseDataLocal(fim);
+    if (!a || !b) return 999;
     return Math.floor((b - a) / 86400000) + 1;
   }
 
   function ajustarPeriodoMax7(ini, fim) {
-    const hoje = hojeIso();
-    let data_inicio = ini || addDiasIso(hoje, -(PERIODO_MAX_DIAS - 1));
-    let data_fim = fim || hoje;
-    if (parseIsoDate(data_inicio) > parseIsoDate(data_fim)) data_fim = data_inicio;
-    if (parseIsoDate(data_fim) > parseIsoDate(hoje)) data_fim = hoje;
+    const hoje = hojeIsoLocal();
+    let data_inicio = normalizarDataIso(ini) || addDiasIso(hoje, -(PERIODO_MAX_DIAS - 1));
+    let data_fim = normalizarDataIso(fim) || hoje;
+    if (parseDataLocal(data_inicio) > parseDataLocal(data_fim)) data_fim = data_inicio;
+    if (parseDataLocal(data_fim) > parseDataLocal(hoje)) data_fim = hoje;
     if (diasNoPeriodo(data_inicio, data_fim) > PERIODO_MAX_DIAS) {
       data_fim = addDiasIso(data_inicio, PERIODO_MAX_DIAS - 1);
-      if (parseIsoDate(data_fim) > parseIsoDate(hoje)) {
+      if (parseDataLocal(data_fim) > parseDataLocal(hoje)) {
         data_fim = hoje;
         data_inicio = addDiasIso(hoje, -(PERIODO_MAX_DIAS - 1));
       }
@@ -108,15 +143,18 @@
   function aplicarLimitesInputsDatas(origem) {
     const elIni = document.getElementById('dataInicio');
     const elFim = document.getElementById('dataFim');
-    if (!elIni || !elFim) return;
+    if (!elIni || !elFim) return { ajustou: false };
 
-    const hoje = hojeIso();
+    const hoje = hojeIsoLocal();
+    const antesIni = elIni.value;
+    const antesFim = elFim.value;
+
     elIni.max = hoje;
     elFim.max = hoje;
 
-    let ini = elIni.value;
-    let fim = elFim.value;
-    if (!ini && !fim) return;
+    let ini = normalizarDataIso(elIni.value);
+    let fim = normalizarDataIso(elFim.value);
+    if (!ini && !fim) return { ajustou: false };
 
     const ajustado = ajustarPeriodoMax7(ini || undefined, fim || undefined);
     ini = ajustado.data_inicio;
@@ -148,18 +186,59 @@
 
     elIni.value = ini;
     elFim.value = fim;
+    return { ajustou: antesIni !== ini || antesFim !== fim };
+  }
+
+  /** Garante 7 dias nos inputs e persiste filtros corrigidos no storage. */
+  function sincronizarPeriodoDatas(origem) {
+    const r = aplicarLimitesInputsDatas(origem);
+    const elIni = document.getElementById('dataInicio');
+    const elFim = document.getElementById('dataFim');
+    if (!elIni?.value || !elFim?.value) return r;
+
+    const periodo = ajustarPeriodoMax7(elIni.value, elFim.value);
+    if (elIni.value !== periodo.data_inicio) elIni.value = periodo.data_inicio;
+    if (elFim.value !== periodo.data_fim) elFim.value = periodo.data_fim;
+
+    const filtros = TelferStorage.loadFilters() || {};
+    const mudou =
+      filtros.data_inicio !== elIni.value ||
+      filtros.data_fim !== elFim.value ||
+      r.ajustou;
+    if (mudou) {
+      TelferStorage.saveFilters({
+        ...filtros,
+        data_inicio: elIni.value,
+        data_fim: elFim.value,
+        objetivo: filtros.objetivo ?? null,
+      });
+      const rel = TelferStorage.loadDashboard();
+      if (rel) TelferStorage.saveDashboard(rel, filtrosDaTelaSemSync());
+    }
+    return { ...r, ajustou: r.ajustou || mudou };
+  }
+
+  function filtrosDaTelaSemSync() {
+    return {
+      data_inicio: document.getElementById('dataInicio').value || null,
+      data_fim: document.getElementById('dataFim').value || null,
+      objetivo: document.getElementById('objetivoCampanha').value || null,
+    };
   }
 
   function validarPeriodoRelatorio() {
+    sincronizarPeriodoDatas();
     const elIni = document.getElementById('dataInicio');
     const elFim = document.getElementById('dataFim');
-    aplicarLimitesInputsDatas();
     const ini = elIni.value;
     const fim = elFim.value;
     if (!ini || !fim) {
       return { ok: false, msg: 'Informe data início e data fim.' };
     }
-    if (parseIsoDate(ini) > parseIsoDate(fim)) {
+    if (!normalizarDataIso(ini) || !normalizarDataIso(fim)) {
+      return { ok: false, msg: 'Datas inválidas. Use o seletor de calendário.' };
+    }
+    if (parseDataLocal(ini) > parseDataLocal(fim)) {
       return { ok: false, msg: 'Data início não pode ser depois da data fim.' };
     }
     if (diasNoPeriodo(ini, fim) > PERIODO_MAX_DIAS) {
@@ -172,7 +251,7 @@
   }
 
   function defaultsDatas() {
-    const hoje = hojeIso();
+    const hoje = hojeIsoLocal();
     const ini = addDiasIso(hoje, -(PERIODO_MAX_DIAS - 1));
     const elIni = document.getElementById('dataInicio');
     const elFim = document.getElementById('dataFim');
@@ -180,7 +259,7 @@
       elIni.value = ini;
       elFim.value = hoje;
     }
-    aplicarLimitesInputsDatas();
+    sincronizarPeriodoDatas();
   }
 
   function formatarMetrica(m) {
@@ -489,11 +568,8 @@
   }
 
   function filtrosDaTela() {
-    return {
-      data_inicio: document.getElementById('dataInicio').value || null,
-      data_fim: document.getElementById('dataFim').value || null,
-      objetivo: document.getElementById('objetivoCampanha').value || null,
-    };
+    sincronizarPeriodoDatas();
+    return filtrosDaTelaSemSync();
   }
 
   function persistirFiltrosNaSessao() {
@@ -522,14 +598,24 @@
   }
 
   function aplicarFiltrosNaTela(filtros) {
-    if (!filtros) return;
+    if (!filtros) return false;
     const elIni = document.getElementById('dataInicio');
     const elFim = document.getElementById('dataFim');
+    const antes = {
+      ini: normalizarDataIso(filtros.data_inicio),
+      fim: normalizarDataIso(filtros.data_fim),
+    };
     const ajustado = ajustarPeriodoMax7(filtros.data_inicio, filtros.data_fim);
     if (ajustado.data_inicio) elIni.value = ajustado.data_inicio;
     if (ajustado.data_fim) elFim.value = ajustado.data_fim;
-    aplicarLimitesInputsDatas();
     if (filtros.objetivo != null) aplicarObjetivoNoSelect(filtros.objetivo || '');
+    const sync = sincronizarPeriodoDatas();
+    return (
+      sync.ajustou ||
+      antes.ini !== elIni.value ||
+      antes.fim !== elFim.value ||
+      diasNoPeriodo(antes.ini, antes.fim) > PERIODO_MAX_DIAS
+    );
   }
 
   function textoResumoObjetivos(json) {
@@ -664,16 +750,23 @@
     if (!temDadosRelatorio(normalizado)) return false;
 
     data = normalizado;
-    aplicarFiltrosNaTela(TelferStorage.loadFilters());
+    const periodoAjustado = aplicarFiltrosNaTela(TelferStorage.loadFilters());
 
+    const avisos = [];
     const quando = TelferStorage.loadSavedAt();
     if (quando) {
-      mostrarAviso(
+      avisos.push(
         'Relatório restaurado (salvo em ' +
           new Date(quando).toLocaleString('pt-BR') +
           '). Gere novamente para atualizar métricas.'
       );
     }
+    if (periodoAjustado) {
+      avisos.push(
+        `Período ajustado para no máximo ${PERIODO_MAX_DIAS} dias (salvo no navegador).`
+      );
+    }
+    if (avisos.length) mostrarAviso(avisos.join(' '));
 
     renderDashboard();
     document.getElementById('reloadBtn').classList.remove('is-hidden');
@@ -714,14 +807,16 @@
   refreshObjetivosBtn.addEventListener('click', () => carregarObjetivosMeta(false));
 
   document.getElementById('objetivoCampanha')?.addEventListener('change', persistirFiltrosNaSessao);
-  document.getElementById('dataInicio')?.addEventListener('change', () => {
-    aplicarLimitesInputsDatas('inicio');
+  function onAlteracaoData(origem) {
+    sincronizarPeriodoDatas(origem);
     persistirFiltrosNaSessao();
-  });
-  document.getElementById('dataFim')?.addEventListener('change', () => {
-    aplicarLimitesInputsDatas('fim');
-    persistirFiltrosNaSessao();
-  });
+  }
+  const elDataIni = document.getElementById('dataInicio');
+  const elDataFim = document.getElementById('dataFim');
+  elDataIni?.addEventListener('change', () => onAlteracaoData('inicio'));
+  elDataFim?.addEventListener('change', () => onAlteracaoData('fim'));
+  elDataIni?.addEventListener('input', () => onAlteracaoData('inicio'));
+  elDataFim?.addEventListener('input', () => onAlteracaoData('fim'));
 
   document.querySelector('a[href="analise.html"]')?.addEventListener('click', () => {
     if (data?.kpis || data?.campanhas?.length) {
@@ -1033,7 +1128,7 @@
   defaultsDatas();
 
   (async function init() {
-    restaurarRelatorioSalvo();
+    const tinhaRelatorio = restaurarRelatorioSalvo();
 
     const cacheObj = TelferStorage.loadObjectives();
     if (cacheObj?.objetivos?.length) {
@@ -1046,12 +1141,20 @@
             ' (↻ Meta para atualizar)'
         );
       }
-    } else {
-      aplicarFiltrosNaTela(TelferStorage.loadFilters());
+    } else if (!tinhaRelatorio) {
+      const periodoAjustado = aplicarFiltrosNaTela(TelferStorage.loadFilters());
+      if (periodoAjustado) {
+        mostrarAviso(
+          `Período ajustado para no máximo ${PERIODO_MAX_DIAS} dias (máximo permitido).`
+        );
+      }
     }
+
+    sincronizarPeriodoDatas();
 
     await carregarObjetivosMeta(true);
     aplicarObjetivoNoSelect(TelferStorage.loadFilters()?.objetivo ?? lerObjetivoSelecionado());
+    sincronizarPeriodoDatas();
     setInterval(() => carregarObjetivosMeta(true), OBJETIVOS_POLL_MS);
   })();
 })();
