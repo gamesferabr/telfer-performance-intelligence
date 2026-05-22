@@ -263,59 +263,9 @@
   }
 
   function listaCriativosCampanha(c) {
-    const raw = Array.isArray(c?.criativos) ? c.criativos : Array.isArray(c?.ads) ? c.ads : [];
-    const norm = globalThis.TelferMedia?.normalizarCriativo;
-    return raw.map((cr) => (norm ? norm(cr) : cr)).filter(Boolean);
-  }
-
-  function htmlImagemCriativo(cr) {
-    if (!globalThis.TelferMedia) return '';
-    const urls = TelferMedia.urlsCriativo(cr);
-    const src = urls.primary || urls.thumbRaw || urls.fallback;
-    if (!src) return '';
-
-    const srcset =
-      urls.srcset && !urls.isVideo
-        ? ' srcset="' + escHtml(urls.srcset) + '" sizes="(min-width: 900px) 200px, 40vw"'
-        : '';
-    const dataFb = urls.fallback ? ' data-fallback="' + escHtml(urls.fallback) + '"' : '';
-    const dataThumb = urls.thumbRaw ? ' data-thumb="' + escHtml(urls.thumbRaw) + '"' : '';
-    const tagVideo = urls.isVideo
-      ? '<span class="criativo-tag-video" aria-hidden="true">vídeo</span>'
-      : '';
-
-    return (
-      '<div class="criativo-media">' +
-      tagVideo +
-      '<img class="criativo-img" src="' +
-      escHtml(src) +
-      '" data-src-original="' +
-      escHtml(src) +
-      '"' +
-      srcset +
-      dataFb +
-      dataThumb +
-      ' alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" ' +
-      'onerror="TelferMedia.onImgError(this)" /></div>'
-    );
-  }
-
-  function htmlGridCriativos(campanha) {
-    const criativos = listaCriativosCampanha(campanha);
-    if (!criativos.length) {
-      return '<p class="text-muted criativos-empty">Sem preview de criativos (dados da Meta).</p>';
-    }
-    let html = '<div class="grid-criativos grid-criativos--dashboard">';
-    for (const cr of criativos) {
-      html +=
-        '<div class="criativo criativo--compact">' +
-        htmlImagemCriativo(cr) +
-        '<div class="criativo-body"><div class="nome">' +
-        escHtml(cr.nome || 'Anúncio') +
-        '</div></div></div>';
-    }
-    html += '</div>';
-    return html;
+    if (Array.isArray(c?.criativos)) return c.criativos;
+    if (Array.isArray(c?.ads)) return c.ads;
+    return [];
   }
 
   function formatarMetrica(m) {
@@ -1158,10 +1108,6 @@
             <div class="metricas-panel">
             <span class="metricas-label">Métricas essenciais</span>
             ${htmlListaMetricas(metricas)}
-            </div>
-            <div class="criativos-panel">
-            <span class="metricas-label">Criativos (Meta)</span>
-            ${htmlGridCriativos(c)}
             </div>
         </div>
       `;
