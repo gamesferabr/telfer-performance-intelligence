@@ -26,6 +26,7 @@ for (const line of fs.readFileSync(envPath, 'utf8').split(/\r?\n/)) {
 const n8nHost = env.N8N_HOST || env.N8N_WEBHOOK_HOST;
 const webhookId = env.WEBHOOK_ID || env.N8N_WEBHOOK_ID;
 const webhookMode = env.WEBHOOK_MODE || env.N8N_WEBHOOK_MODE || 'test';
+const fetchTimeoutMs = Number(env.FETCH_TIMEOUT_MS || 900000);
 
 if (!n8nHost || !webhookId) {
   console.error('.env precisa de N8N_HOST e WEBHOOK_ID');
@@ -34,7 +35,7 @@ if (!n8nHost || !webhookId) {
 
 const contents =
   '/** Gerado por scripts/generate-config.js — não editar manualmente no deploy */\n' +
-  `window.TELFER_CONFIG = ${JSON.stringify({ n8nHost, webhookId, webhookMode }, null, 2)};\n`;
+  `window.TELFER_CONFIG = ${JSON.stringify({ n8nHost, webhookId, webhookMode, fetchTimeoutMs }, null, 2)};\n`;
 
 fs.writeFileSync(outPath, contents, 'utf8');
 console.log('OK:', outPath);

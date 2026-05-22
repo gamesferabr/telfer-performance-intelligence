@@ -311,8 +311,11 @@ a {
 .status-pill:not(.is-hidden) {
   display: inline-flex;
   align-items: center;
+  flex: 1 1 100%;
+  max-width: 100%;
   padding: 8px 14px;
   font-size: 0.8rem;
+  line-height: 1.4;
   color: var(--red-dark);
   background: var(--red-soft);
   border: 1px solid var(--red-border);

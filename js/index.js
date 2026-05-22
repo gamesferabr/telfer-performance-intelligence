@@ -36,9 +36,22 @@
     throw new Error(msg);
   }
 
-  const FETCH_TIMEOUT_MS = 4 * 60 * 1000;
+  const FETCH_TIMEOUT_PADRAO_MS = 15 * 60 * 1000;
+  const FETCH_OBJETIVOS_MS = 90 * 1000;
   const OBJETIVOS_POLL_MS = 10 * 60 * 1000;
   let relatorioEmAndamento = false;
+  let loadingTimerId = null;
+  let loadingInicioMs = 0;
+
+  function timeoutRelatorioMs() {
+    const n = Number(window.TELFER_CONFIG?.fetchTimeoutMs);
+    if (Number.isFinite(n) && n >= 120000) return n;
+    return FETCH_TIMEOUT_PADRAO_MS;
+  }
+
+  function minutosTimeoutLabel() {
+    return Math.round(timeoutRelatorioMs() / 60000);
+  }
 
   function escHtml(s) {
     if (s == null) return '';
@@ -489,11 +502,19 @@
     if (!silencioso) atualizarMetaObjetivos('Atualizando objetivos na Meta…');
 
     try {
-      const res = await fetch(exigirConfig(), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ listar_objetivos: true }),
-      });
+      const ctrlObj = new AbortController();
+      const tObj = setTimeout(() => ctrlObj.abort(), FETCH_OBJETIVOS_MS);
+      let res;
+      try {
+        res = await fetch(exigirConfig(), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ listar_objetivos: true }),
+          signal: ctrlObj.signal,
+        });
+      } finally {
+        clearTimeout(tObj);
+      }
       const json = await res.json();
       if (json.tipo === 'objetivos' && Array.isArray(json.objetivos)) {
         TelferStorage.saveObjectives(json);
@@ -547,9 +568,24 @@
 
   function setLoading(ativo, texto) {
     const el = document.getElementById('loading');
+    if (loadingTimerId) {
+      clearInterval(loadingTimerId);
+      loadingTimerId = null;
+    }
     if (ativo) {
+      loadingInicioMs = Date.now();
       el.classList.remove('is-hidden');
-      if (texto) el.textContent = texto;
+      const base = texto || 'processando…';
+      const limiteMin = minutosTimeoutLabel();
+      const atualizar = () => {
+        const s = Math.floor((Date.now() - loadingInicioMs) / 1000);
+        const min = Math.floor(s / 60);
+        const sec = String(s % 60).padStart(2, '0');
+        const decorrido = min > 0 ? `${min}:${sec}` : `0:${sec}`;
+        el.textContent = `${base} (${decorrido} · limite ${limiteMin} min)`;
+      };
+      atualizar();
+      loadingTimerId = setInterval(atualizar, 1000);
     } else {
       el.classList.add('is-hidden');
     }
@@ -583,7 +619,7 @@
 
     const objetivoEscolhido = lerObjetivoSelecionado();
 
-    setLoading(true, 'Aguardando resposta do n8n…');
+    setLoading(true, 'n8n processando (Meta + Claude)…');
     console.log(
       '[Telfer] POST',
       modoWebhookTeste() ? 'webhook-test' : 'webhook',
@@ -607,12 +643,13 @@
         objetivo_campanha: objetivo || null,
       };
 
+      const timeoutMs = timeoutRelatorioMs();
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
       let response;
       try {
-          response = await fetch(exigirConfig(), {
+        response = await fetch(exigirConfig(), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -623,9 +660,11 @@
         });
       } catch (err) {
         if (err?.name === 'AbortError') {
+          const lim = minutosTimeoutLabel();
           throw new Error(
-            'Tempo esgotado (4 min). Confira se o workflow n8n está Publicado. ' +
-              'Teste no editor: index.html?test=1 e Listen for test event no n8n.'
+            `Tempo esgotado (${lim} min). O fluxo no n8n pode ainda estar rodando — veja Execuções no painel. ` +
+              'Se terminou com sucesso, gere de novo ou aumente fetchTimeoutMs no config. ' +
+              'Local: index.html?test=1 + Listen no n8n.'
           );
         }
         throw err;

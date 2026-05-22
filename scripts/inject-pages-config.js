@@ -14,7 +14,8 @@ if (!host || !webhookId) {
   process.exit(1);
 }
 
-const cfg = { n8nHost: host, webhookId, webhookMode };
+const fetchTimeoutMs = Number(process.env.FETCH_TIMEOUT_MS || 900000);
+const cfg = { n8nHost: host, webhookId, webhookMode, fetchTimeoutMs };
 const inline =
   `<script>window.TELFER_CONFIG=${JSON.stringify(cfg)};</script>`;
 

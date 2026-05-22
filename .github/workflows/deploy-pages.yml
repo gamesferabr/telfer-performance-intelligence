@@ -35,7 +35,7 @@ jobs:
             echo "::error::Defina os secrets N8N_HOST e WEBHOOK_ID no repositório."
             exit 1
           fi
-          printf 'N8N_HOST=%s\nWEBHOOK_ID=%s\nWEBHOOK_MODE=prod\n' "$N8N_HOST" "$WEBHOOK_ID" > .env
+          printf 'N8N_HOST=%s\nWEBHOOK_ID=%s\nWEBHOOK_MODE=prod\nFETCH_TIMEOUT_MS=900000\n' "$N8N_HOST" "$WEBHOOK_ID" > .env
           node scripts/generate-config.js
           node scripts/inject-pages-config.js
 

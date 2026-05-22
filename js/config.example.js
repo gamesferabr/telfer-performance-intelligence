@@ -5,4 +5,6 @@
 window.TELFER_CONFIG = {
   n8nHost: 'https://SEU-N8N.exemplo.com',
   webhookId: '00000000-0000-0000-0000-000000000000',
+  webhookMode: 'test',
+  fetchTimeoutMs: 900000,
 };
