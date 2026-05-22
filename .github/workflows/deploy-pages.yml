@@ -42,6 +42,7 @@ jobs:
       - name: Verificar config no artefato
         run: |
           grep -q "TELFER_CONFIG" index.html || (echo "index.html sem config" && exit 1)
+          grep -q "n8nHost" js/runtime-config.js || (echo "runtime-config.js inválido" && exit 1)
           test -f .nojekyll
 
       - uses: actions/configure-pages@v5

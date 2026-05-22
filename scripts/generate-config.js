@@ -7,7 +7,8 @@ const path = require('path');
 
 const root = path.join(__dirname, '..');
 const envPath = path.join(root, '.env');
-const outPath = path.join(root, 'js', 'config.js');
+const outConfig = path.join(root, 'js', 'config.js');
+const outRuntime = path.join(root, 'js', 'runtime-config.js');
 
 if (!fs.existsSync(envPath)) {
   console.error('Crie o arquivo .env na raiz (veja .env.example).');
@@ -25,7 +26,7 @@ for (const line of fs.readFileSync(envPath, 'utf8').split(/\r?\n/)) {
 
 const n8nHost = env.N8N_HOST || env.N8N_WEBHOOK_HOST;
 const webhookId = env.WEBHOOK_ID || env.N8N_WEBHOOK_ID;
-const webhookMode = env.WEBHOOK_MODE || env.N8N_WEBHOOK_MODE || 'test';
+const webhookModeLocal = env.WEBHOOK_MODE || env.N8N_WEBHOOK_MODE || 'test';
 const fetchTimeoutMs = Number(env.FETCH_TIMEOUT_MS || 900000);
 
 if (!n8nHost || !webhookId) {
@@ -33,9 +34,13 @@ if (!n8nHost || !webhookId) {
   process.exit(1);
 }
 
-const contents =
-  '/** Gerado por scripts/generate-config.js — não editar manualmente no deploy */\n' +
-  `window.TELFER_CONFIG = ${JSON.stringify({ n8nHost, webhookId, webhookMode, fetchTimeoutMs }, null, 2)};\n`;
+const payloadLocal = { n8nHost, webhookId, webhookMode: webhookModeLocal, fetchTimeoutMs };
+const payloadPages = { n8nHost, webhookId, webhookMode: 'prod', fetchTimeoutMs };
 
-fs.writeFileSync(outPath, contents, 'utf8');
-console.log('OK:', outPath);
+const mk = (comment, payload) =>
+  `/** ${comment} */\nwindow.TELFER_CONFIG = ${JSON.stringify(payload, null, 2)};\n`;
+
+fs.writeFileSync(outConfig, mk('Gerado — uso local (sobrescreve runtime-config se existir)', payloadLocal), 'utf8');
+fs.writeFileSync(outRuntime, mk('Gerado — GitHub Pages / produção', payloadPages), 'utf8');
+console.log('OK:', outConfig);
+console.log('OK:', outRuntime);

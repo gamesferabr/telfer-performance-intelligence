@@ -29,8 +29,9 @@
     const url = montarUrlWebhook();
     if (url) return url;
     const msg =
-      'Configuração ausente. Local: copie js/config.example.js → js/config.js ou rode ' +
-      '"node scripts/generate-config.js". No GitHub Pages: confira o deploy Actions e secrets N8N_HOST / WEBHOOK_ID.';
+      'Configuração ausente. Local: node scripts/generate-config.js (cria js/config.js). ' +
+      'GitHub Pages: o arquivo js/runtime-config.js precisa existir no site publicado; ' +
+      'se usar Actions, confira secrets N8N_HOST / WEBHOOK_ID e que Pages não esteja só em "branch main" sem o artefato do workflow.';
     console.error('[Telfer]', msg);
     alert(msg);
     throw new Error(msg);

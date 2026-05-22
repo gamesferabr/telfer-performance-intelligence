@@ -1,6 +1,7 @@
-# Segredos e config gerada localmente
+# Segredos e config só-local (sobrescreve runtime-config no navegador)
 .env
 js/config.js
+# js/runtime-config.js é versionado para Pages (branch main)
 
 # Editor
 .vscode/
