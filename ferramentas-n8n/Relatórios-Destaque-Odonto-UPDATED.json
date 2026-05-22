@@ -1,0 +1,546 @@
+{
+  "name": "Relatórios Destaque Odonto",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.claudeBody }}",
+        "options": {}
+      },
+      "id": "82301ad3-9629-41df-b3bb-a873c45ada34",
+      "name": "Claude Analise Completa",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -224,
+        512
+      ],
+      "retryOnFail": false,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "U7LcPn2t8SVM1OaZ",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.facebook.com/v20.0/{{$('Filtrar campanhas (objetivo)').first().json.cliente.account_id}}/insights",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "campaign_id,campaign_name,spend,reach,impressions,clicks,inline_link_clicks,cpm,ctr,frequency,actions,action_values,cost_per_action_type"
+            },
+            {
+              "name": "level",
+              "value": "campaign"
+            },
+            {
+              "name": "time_range",
+              "value": "={{ JSON.stringify({ since: $('Filtrar campanhas (objetivo)').first().json.body.data_inicio, until: $('Filtrar campanhas (objetivo)').first().json.body.data_fim }) }}"
+            },
+            {
+              "name": "filtering",
+              "value": "={{ (($('Filtrar campanhas (objetivo)').first().json.campaign_ids_filtradas) || []).length ? JSON.stringify([{ field: 'campaign.id', operator: 'IN', value: $('Filtrar campanhas (objetivo)').first().json.campaign_ids_filtradas }]) : '' }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "0c6abdce-7b14-42dc-84df-aa068abe0e02",
+      "name": "📊 Meta — Insights",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -816,
+        256
+      ],
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "JsZkTAqBKJ0FNOGX",
+          "name": "Token - Meta API"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * Enriquecer métricas (Processar Dados) com objetivo Meta + criativos agregados.\n */\nconst ctx = $('Filtrar campanhas (objetivo)').first().json ?? {};\nconst cliente = ctx.cliente ?? {};\nconst objetivoPorId = cliente.objetivos_por_campanha ?? {};\n\nconst aggItem = $('⚙️ Agregar ads por campanha').first()?.json ?? {};\nconst ads_por_campanha = aggItem.ads_por_campanha ?? {};\n\nconst metricsItems = $('Processar Dados').all();\n\nconst dados = metricsItems.map((m) => {\n  const j = { ...m.json };\n  const cid = j.campaign_id || j.meta_campaign_id || null;\n  const cidStr = cid != null ? String(cid) : null;\n\n  j.meta_campaign_id = cidStr;\n  j.objetivo = cidStr ? objetivoPorId[cidStr] ?? null : null;\n  j.nome_campanha = j.campanha ?? j.nome ?? 'Sem nome';\n  j.nome = j.nome_campanha;\n  j.criativos = cidStr && ads_por_campanha[cidStr] ? ads_por_campanha[cidStr] : [];\n\n  return {\n    json: {\n      ...j,\n      filtros: {\n        data_inicio: ctx.body?.data_inicio,\n        data_fim: ctx.body?.data_fim,\n        objetivo_campanha: ctx.body?.objetivo_campanha ?? null,\n      },\n    },\n  };\n});\n\nreturn dados;"
+      },
+      "id": "f2a98c10-c4c1-4c2b-a1df-aaaa11112222",
+      "name": "🔗 Mesclar métricas + criativos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -448,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawItems = $input.all();\r\n\r\nconst insights = rawItems.flatMap((item) => {\r\n  const json = item.json;\r\n  if (Array.isArray(json.data)) return json.data;\r\n  if (json.insights?.data) return json.insights.data;\r\n  return [json];\r\n});\r\n\r\n/** Rótulos legíveis para action_type da Meta (só tradução; métrica só entra se vier na API) */\r\nfunction rotuloAcao(actionType) {\r\n  const t = String(actionType || '');\r\n  const mapa = {\r\n    link_click: 'Cliques nos Anúncios',\r\n    inline_link_click: 'Cliques nos Anúncios',\r\n    outbound_click: 'Cliques de saída',\r\n    landing_page_view: 'Visitas do Site',\r\n    omni_landing_page_view: 'Visitas do Site',\r\n    purchase: 'Vendas',\r\n    'offsite_conversion.fb_pixel_purchase': 'Vendas',\r\n    'onsite_conversion.purchase': 'Vendas',\r\n    lead: 'Leads',\r\n    'onsite_conversion.lead_grouped': 'Leads',\r\n    follow: 'Novos Seguidores',\r\n    'onsite_conversion.follow': 'Novos Seguidores',\r\n    page_engagement: 'Engajamento na página',\r\n    post_engagement: 'Engajamento em publicações',\r\n    video_view: 'Visualizações de vídeo',\r\n    'onsite_conversion.messaging_conversation_started_7d': 'Conversas no WhatsApp',\r\n    messaging_conversation_started_7d: 'Conversas no WhatsApp',\r\n    instagram_profile_engagement: 'Visitas ao Instagram',\r\n    profile_visits: 'Visitas ao Instagram',\r\n    like: 'Curtidas',\r\n    comment: 'Comentários',\r\n    share: 'Compartilhamentos',\r\n    add_to_cart: 'Adições ao carrinho',\r\n    initiate_checkout: 'Checkout iniciado',\r\n    complete_registration: 'Cadastros completos',\r\n  };\r\n  if (mapa[t]) return mapa[t];\r\n  return t\r\n    .replace(/^offsite_conversion\\./, '')\r\n    .replace(/^onsite_conversion\\./, '')\r\n    .replace(/[._]/g, ' ')\r\n    .replace(/\\s+/g, ' ')\r\n    .trim()\r\n    .replace(/\\b\\w/g, (c) => c.toUpperCase());\r\n}\r\n\r\nfunction addMetrica(lista, vistos, item) {\r\n  const nome = String(item.nome || '').trim();\r\n  if (!nome) return;\r\n  const chave = `${nome}|${item.formato || ''}`;\r\n  if (vistos.has(chave)) return;\r\n  vistos.add(chave);\r\n  lista.push(item);\r\n}\r\n\r\nfunction metricasDaInsight(ins) {\r\n  const metricas = [];\r\n  const vistos = new Set();\r\n\r\n  const spend = parseFloat(ins.spend || 0);\r\n  const reach = parseInt(ins.reach || 0, 10);\r\n  const impressions = parseInt(ins.impressions || 0, 10);\r\n  const frequency = parseFloat(ins.frequency || 0);\r\n\r\n  if (spend > 0) {\r\n    addMetrica(metricas, vistos, {\r\n      nome: 'Valor investido',\r\n      valor: Number(spend.toFixed(2)),\r\n      formato: 'moeda',\r\n      origem: 'spend',\r\n    });\r\n  }\r\n  if (reach > 0) {\r\n    addMetrica(metricas, vistos, {\r\n      nome: 'Pessoas Alcançadas',\r\n      valor: reach,\r\n      formato: 'numero',\r\n      origem: 'reach',\r\n    });\r\n  }\r\n  if (impressions > 0) {\r\n    addMetrica(metricas, vistos, {\r\n      nome: 'Impressões',\r\n      valor: impressions,\r\n      formato: 'numero',\r\n      origem: 'impressions',\r\n    });\r\n  }\r\n  if (frequency > 0) {\r\n    addMetrica(metricas, vistos, {\r\n      nome: 'Frequência',\r\n      valor: Number(frequency.toFixed(2)),\r\n      formato: 'decimal',\r\n      origem: 'frequency',\r\n    });\r\n  }\r\n\r\n  let clicks = 0;\r\n  if (ins.inline_link_clicks != null && ins.inline_link_clicks !== '') {\r\n    clicks = parseFloat(ins.inline_link_clicks);\r\n  } else if (ins.clicks != null && ins.clicks !== '') {\r\n    clicks = parseFloat(ins.clicks);\r\n  }\r\n  if (clicks > 0) {\r\n    addMetrica(metricas, vistos, {\r\n      nome: 'Cliques nos Anúncios',\r\n      valor: clicks,\r\n      formato: 'numero',\r\n      origem: 'clicks',\r\n    });\r\n  }\r\n\r\n  if (impressions > 0 && spend > 0) {\r\n    addMetrica(metricas, vistos, {\r\n      nome: 'CPM',\r\n      valor: Number(((spend / impressions) * 1000).toFixed(2)),\r\n      formato: 'moeda',\r\n      origem: 'cpm_calc',\r\n    });\r\n  }\r\n  if (impressions > 0 && clicks > 0) {\r\n    addMetrica(metricas, vistos, {\r\n      nome: 'CTR',\r\n      valor: Number(((clicks / impressions) * 100).toFixed(2)),\r\n      formato: 'percentual',\r\n      origem: 'ctr_calc',\r\n    });\r\n  }\r\n\r\n  const acoes = Array.isArray(ins.actions) ? ins.actions : [];\r\n  for (const a of acoes) {\r\n    const v = parseFloat(a.value || 0);\r\n    if (v <= 0) continue;\r\n    const tipo = a.action_type;\r\n    if (['reach', 'impressions', 'spend'].includes(tipo)) continue;\r\n    addMetrica(metricas, vistos, {\r\n      nome: rotuloAcao(tipo),\r\n      valor: v,\r\n      formato: 'numero',\r\n      origem: tipo,\r\n    });\r\n  }\r\n\r\n  const custos = Array.isArray(ins.cost_per_action_type) ? ins.cost_per_action_type : [];\r\n  for (const c of custos) {\r\n    const v = parseFloat(c.value || 0);\r\n    if (v <= 0) continue;\r\n    const base = rotuloAcao(c.action_type);\r\n    addMetrica(metricas, vistos, {\r\n      nome: `Custo por ${base}`,\r\n      valor: Number(v.toFixed(2)),\r\n      formato: 'moeda',\r\n      origem: `cost_${c.action_type}`,\r\n    });\r\n  }\r\n\r\n  const valores = Array.isArray(ins.action_values) ? ins.action_values : [];\r\n  for (const av of valores) {\r\n    const v = parseFloat(av.value || 0);\r\n    if (v <= 0) continue;\r\n    const tipo = String(av.action_type || '');\r\n    if (tipo.includes('purchase') || tipo === 'purchase') {\r\n      addMetrica(metricas, vistos, {\r\n        nome: 'Faturamento',\r\n        valor: Number(v.toFixed(2)),\r\n        formato: 'moeda',\r\n        origem: av.action_type,\r\n      });\r\n    }\r\n  }\r\n\r\n  const vendas = metricas.find((m) => m.nome === 'Vendas');\r\n  const faturamento = metricas.find((m) => m.nome === 'Faturamento');\r\n  if (vendas && faturamento && vendas.valor > 0) {\r\n    addMetrica(metricas, vistos, {\r\n      nome: 'Ticket Médio',\r\n      valor: Number((faturamento.valor / vendas.valor).toFixed(2)),\r\n      formato: 'moeda',\r\n      origem: 'ticket_medio_calc',\r\n    });\r\n    if (spend > 0) {\r\n      addMetrica(metricas, vistos, {\r\n        nome: 'Custo por Venda',\r\n        valor: Number((spend / vendas.valor).toFixed(2)),\r\n        formato: 'moeda',\r\n        origem: 'custo_venda_calc',\r\n      });\r\n    }\r\n  }\r\n\r\n  return metricas;\r\n}\r\n\r\nfunction legadoDeMetricas(metricas) {\r\n  const get = (nome) => metricas.find((m) => m.nome === nome)?.valor ?? 0;\r\n  const spend = get('Valor investido');\r\n  const reach = get('Pessoas Alcançadas');\r\n  const impressions = get('Impressões');\r\n  const clicks = get('Cliques nos Anúncios');\r\n  const leads = get('Leads');\r\n  const mensagens = get('Conversas no WhatsApp');\r\n  const ctr = get('CTR');\r\n  const cpm = get('CPM');\r\n  const freq = get('Frequência');\r\n\r\n  return {\r\n    spend,\r\n    reach,\r\n    impressions,\r\n    clicks,\r\n    leads,\r\n    mensagens,\r\n    ctr: ctr || (impressions > 0 && clicks > 0 ? Number(((clicks / impressions) * 100).toFixed(2)) : 0),\r\n    cpm: cpm || (impressions > 0 ? Number(((spend / impressions) * 1000).toFixed(2)) : 0),\r\n    frequencia: freq || (reach > 0 ? Number((impressions / reach).toFixed(2)) : 0),\r\n    custoLead: leads > 0 ? Number((spend / leads).toFixed(2)) : null,\r\n    custoMensagem: mensagens > 0 ? Number((spend / mensagens).toFixed(2)) : null,\r\n  };\r\n}\r\n\r\nconst normalizados = insights.map((ins) => {\r\n  const campaignId = ins.campaign_id != null ? String(ins.campaign_id) : null;\r\n  const metricas = metricasDaInsight(ins);\r\n  const leg = legadoDeMetricas(metricas);\r\n\r\n  return {\r\n    json: {\r\n      campaign_id: campaignId,\r\n      meta_campaign_id: campaignId,\r\n      campanha: ins.campaign_name || ins.campaignName || 'Sem nome',\r\n      metricas,\r\n      ...leg,\r\n    },\r\n  };\r\n});\r\n\r\nreturn normalizados;\r\n"
+      },
+      "id": "ea3317b4-b07e-4dd2-baea-c73f53aa3477",
+      "name": "Processar Dados",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -624,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "maxItems": 1,
+        "keep": "firstItems"
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        -536,
+        256
+      ],
+      "id": "aaaaaaaa-bbbb-cccc-dddd-limitads01",
+      "name": "▶ Ads: disparar 1 vez"
+    },
+    {
+      "parameters": {
+        "jsCode": "const listaSource = $('📋 Lista Destaque Odonto').first().json;\r\nconst res = $input.first().json;\r\n\r\nconst todas = Array.isArray(res.data) ? res.data : [];\r\n\r\nfunction campanhaAtiva(c) {\r\n  const st = String(c.effective_status || c.status || '').toUpperCase();\r\n  return st === 'ACTIVE';\r\n}\r\n\r\nconst campanhas = todas.filter(campanhaAtiva);\r\nconst body = listaSource.body || {};\r\nconst objetivoFiltro = body.objetivo_campanha || null;\r\n\r\nconst filtradas = objetivoFiltro\r\n  ? campanhas.filter((c) => String(c.objective || '') === String(objetivoFiltro))\r\n  : campanhas;\r\n\r\nconst idsFiltradas = filtradas\r\n  .map((c) => (c.id != null ? String(c.id) : null))\r\n  .filter(Boolean);\r\n\r\nconst objetivos_por_campanha = {};\r\nfor (const c of campanhas) {\r\n  if (c?.id != null && c.objective) {\r\n    objetivos_por_campanha[String(c.id)] = String(c.objective);\r\n  }\r\n}\r\n\r\nconst cliente = { ...listaSource.cliente, objetivos_por_campanha };\r\n\r\nreturn [\r\n  {\r\n    json: {\r\n      cliente,\r\n      body,\r\n      campaign_ids_filtradas: idsFiltradas,\r\n      total_campanhas_ativas: campanhas.length,\r\n      total_campanhas_conta: todas.length,\r\n    },\r\n  },\r\n];\r\n"
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1011121314",
+      "name": "Filtrar campanhas (objetivo)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1008,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.facebook.com/v20.0/{{$json.cliente.account_id}}/campaigns",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "id,name,objective,status,effective_status"
+            },
+            {
+              "name": "limit",
+              "value": "500"
+            },
+            {
+              "name": "filtering",
+              "value": "={{ JSON.stringify([{ field: 'effective_status', operator: 'IN', value: ['ACTIVE'] }]) }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "b2c3d4e5-f6a7-8901-bcde-f12131415161",
+      "name": "📂 Meta — Listar campanhas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1200,
+        256
+      ],
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "JsZkTAqBKJ0FNOGX",
+          "name": "Token - Meta API"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.facebook.com/v20.0/{{$('Filtrar campanhas (objetivo)').first().json.cliente.account_id}}/ads",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "id,name,effective_status,status,campaign_id,creative{thumbnail_url,image_url,name,title,body,video_id,object_story_spec}"
+            },
+            {
+              "name": "limit",
+              "value": "500"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "c3d4e5f6-a7b8-9012-cdef-132425262728",
+      "name": "🎨 Meta — Listar anúncios",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -448,
+        64
+      ],
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "JsZkTAqBKJ0FNOGX",
+          "name": "Token - Meta API"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Filtrar campanhas (objetivo)').first().json ?? {};\r\nconst idsFiltradas = ctx.campaign_ids_filtradas || [];\r\nconst idSet = new Set(idsFiltradas.map(String));\r\n\r\nconst rowsSource = $input.first()?.json;\r\nlet rows = [];\r\nif (rowsSource && Array.isArray(rowsSource.data)) {\r\n  rows = rowsSource.data;\r\n}\r\n\r\nif (idSet.size) {\r\n  rows = rows.filter((r) => {\r\n    const cid = r.campaign_id != null ? String(r.campaign_id) : null;\r\n    return Boolean(cid && idSet.has(cid));\r\n  });\r\n}\r\n\r\nfunction extrairMidiaCreative(creative) {\r\n  if (!creative || typeof creative !== 'object') {\r\n    return { image_url: '', thumbnail_url: '', video_id: null, tipo: 'outro' };\r\n  }\r\n\r\n  let image_url = creative.image_url || '';\r\n  let video_id = creative.video_id || null;\r\n  const spec = creative.object_story_spec || {};\r\n  const link = spec.link_data || {};\r\n  const video = spec.video_data || {};\r\n\r\n  if (!image_url && link.picture) image_url = link.picture;\r\n  if (!image_url && video.image_url) image_url = video.image_url;\r\n  if (!video_id && video.video_id) video_id = video.video_id;\r\n\r\n  let thumbnail_url = creative.thumbnail_url || '';\r\n  if (!thumbnail_url && video.image_url) thumbnail_url = video.image_url;\r\n  if (!thumbnail_url && link.picture) thumbnail_url = link.picture;\r\n  if (!thumbnail_url && image_url) thumbnail_url = image_url;\r\n\r\n  const tipo = video_id ? 'video' : image_url || thumbnail_url ? 'imagem' : 'outro';\r\n\r\n  return { image_url, thumbnail_url, video_id, tipo };\r\n}\r\n\r\nconst ads_por_campanha = {};\r\nfor (const r of rows) {\r\n  const cid = r.campaign_id != null ? String(r.campaign_id) : null;\r\n  if (!cid) continue;\r\n  if (!ads_por_campanha[cid]) ads_por_campanha[cid] = [];\r\n\r\n  const creative = r.creative || {};\r\n  const midia = extrairMidiaCreative(creative);\r\n\r\n  ads_por_campanha[cid].push({\r\n    ad_id: String(r.id || ''),\r\n    nome: r.name || creative.name || creative.title || 'Anúncio',\r\n    name: r.name,\r\n    status: r.effective_status || r.status || '',\r\n    thumbnail_url: midia.thumbnail_url,\r\n    image_url: midia.image_url,\r\n    video_id: midia.video_id,\r\n    tipo: midia.tipo,\r\n  });\r\n}\r\n\r\nreturn [{ json: { ads_por_campanha } }];\r\n"
+      },
+      "id": "d4e5f6a7-b8c9-0123-def0-435465768798",
+      "name": "⚙️ Agregar ads por campanha",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        64
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const dados = $input.all().map((i) => i.json);\r\n\r\nconst prompt = `\r\nVocê é um analista sênior de Meta Ads.\r\n\r\nAnalise as campanhas e retorne APENAS JSON VÁLIDO (sem markdown).\r\n\r\nCada campanha em DADOS já traz \"metricas\": array com { nome, valor, formato } vindos da Meta.\r\nNÃO invente métricas. NÃO remova métricas. NÃO renomeie métricas — use os mesmos \"nome\" de DADOS.\r\nPode acrescentar score, status, pontos_fortes, pontos_fracos, recomendacoes com base nos valores reais.\r\n\r\nFORMATO:\r\n\r\n{\r\n  \"kpis\": {\r\n    \"metricas_resumo\": [\r\n      { \"nome\": string, \"valor\": number, \"formato\": \"moeda\" | \"numero\" | \"percentual\" | \"decimal\" }\r\n    ],\r\n    \"melhor_campanha\": string\r\n  },\r\n  \"campanhas\": [\r\n    {\r\n      \"nome\": string,\r\n      \"objetivo\": string | null,\r\n      \"metricas\": [ { \"nome\": string, \"valor\": number, \"formato\": string } ],\r\n      \"score\": number,\r\n      \"status\": \"Excelente\" | \"Boa\" | \"Atenção\" | \"Crítica\",\r\n      \"pontos_fortes\": [string],\r\n      \"pontos_fracos\": [string],\r\n      \"recomendacoes\": [string],\r\n      \"criativos\": [ { \"nome\": string, \"ad_id\": string, \"thumbnail_url\": string, \"status\": string } ]\r\n    }\r\n  ],\r\n  \"insights_gerais\": [string],\r\n  \"acoes_recomendadas\": [string]\r\n}\r\n\r\nREGRAS:\r\n- metricas_resumo = soma/agregação lógica das metricas de todas as campanhas (mesmos nomes quando fizer sentido)\r\n- Em cada campanha, copie o array \"metricas\" integralmente de DADOS\r\n- MAXIMO 2 bullets em pontos_fortes, pontos_fracos, recomendacoes\r\n- MAXIMO 3 itens em insights_gerais e acoes_recomendadas\r\n\r\nDADOS:\r\n${JSON.stringify(\r\n  dados.map((d) => ({\r\n    nome: d.nome || d.campanha,\r\n    objetivo: d.objetivo,\r\n    metricas: d.metricas || [],\r\n    criativos: (d.criativos || []).map((c) => ({\r\n      nome: c.nome,\r\n      ad_id: c.ad_id,\r\n      status: c.status,\r\n      thumbnail_url: c.thumbnail_url,\r\n    })),\r\n  }))\r\n)}\r\n`;\r\n\r\nreturn [\r\n  {\r\n    json: {\r\n      claudeBody: {\r\n        model: 'claude-sonnet-4-5-20250929',\r\n        max_tokens: 8192,\r\n        messages: [{ role: 'user', content: prompt }],\r\n      },\r\n    },\r\n  },\r\n];\r\n"
+      },
+      "id": "6414e1c4-123f-4126-8785-b662f88b83df",
+      "name": "Montar Claude Body",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -464,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const webhook = $('Webhook').first().json ?? {};\nconst bodyRaw = webhook.body ?? webhook ?? {};\n\nconst clienteBase = [\n  {\n    nome: 'Destaque Odonto',\n    account_id: 'act_489210827505328',\n    grupo_jid: '120363426291607702@g.us',\n    filtro_campanha: null,\n    ativo: true,\n  },\n];\n\nfunction onlyDate(isoMaybe) {\n  if (!isoMaybe) return null;\n  const s = String(isoMaybe).slice(0, 10);\n  return /^\\d{4}-\\d{2}-\\d{2}$/.test(s) ? s : null;\n}\n\nconst body = {\n  data_inicio: onlyDate(bodyRaw.data_inicio),\n  data_fim: onlyDate(bodyRaw.data_fim),\n  objetivo_campanha: bodyRaw.objetivo_campanha || null,\n  gerar: Boolean(bodyRaw.gerar),\n  listar_objetivos: Boolean(bodyRaw.listar_objetivos),\n  data: bodyRaw.data || null,\n};\n\nfunction addDaysUTC(isoDate, delta) {\n  const [y, m, d] = isoDate.split('-').map(Number);\n  const dt = new Date(Date.UTC(y, m - 1, d));\n  dt.setUTCDate(dt.getUTCDate() + delta);\n  const yy = dt.getUTCFullYear();\n  const mm = String(dt.getUTCMonth() + 1).padStart(2, '0');\n  const dd = String(dt.getUTCDate()).padStart(2, '0');\n  return `${yy}-${mm}-${dd}`;\n}\n\nconst hoje = new Date().toISOString().slice(0, 10);\nlet dataFim = body.data_fim || hoje;\nlet dataIni = body.data_inicio;\n\nif (!dataIni) {\n  dataIni = addDaysUTC(dataFim, -30);\n}\n\nbody.data_inicio = dataIni;\nbody.data_fim = dataFim;\n\nreturn clienteBase\n  .filter((c) => c.ativo)\n  .map((c) => ({\n    json: {\n      cliente: { ...c, objetivos_por_campanha: {} },\n      body,\n    },\n  }));"
+      },
+      "id": "fbf4151b-1e20-4ee4-9152-9fa64c15aeaf",
+      "name": "📋 Lista Destaque Odonto",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1520,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "4199b300-2046-450d-9dcf-c18ea731f4e7",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1712,
+        384
+      ],
+      "id": "19452227-8b71-4455-82f6-67a32dcbc89a",
+      "name": "Webhook",
+      "webhookId": "4199b300-2046-450d-9dcf-c18ea731f4e7"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        32,
+        512
+      ],
+      "id": "aa44c18c-d70c-4f8e-afd5-0a1374eba0a8",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const emb = $('🔗 Mesclar métricas + criativos').all().map((i) => i.json);\r\nconst resClaude = $input.first()?.json ?? {};\r\n\r\nfunction textoClaude(res) {\r\n  if (typeof res?.text === 'string' && res.text.trim()) return res.text.trim();\r\n  const chunks = res?.content ?? res?.body?.content;\r\n  if (!Array.isArray(chunks)) return '';\r\n  return chunks.map((x) => (x?.type === 'text' ? (x?.text ?? '') : '')).join('').trim();\r\n}\r\n\r\nfunction limparMarkdown(raw) {\r\n  let s = String(raw || '').trim();\r\n  const m = s.match(/```(?:json)?\\s*([\\s\\S]*?)(?:```|$)/i);\r\n  if (m) s = m[1].trim();\r\n  return s.replace(/^```json\\s*/i, '').replace(/```\\s*$/i, '').trim();\r\n}\r\n\r\nfunction repararJsonTruncado(s) {\r\n  let t = s.trim().replace(/,\\s*$/, '');\r\n  const ob = (t.match(/{/g) || []).length - (t.match(/}/g) || []).length;\r\n  const ol = (t.match(/\\[/g) || []).length - (t.match(/]/g) || []).length;\r\n  for (let i = 0; i < ol; i++) t += ']';\r\n  for (let i = 0; i < ob; i++) t += '}';\r\n  try {\r\n    return JSON.parse(t);\r\n  } catch {\r\n    return null;\r\n  }\r\n}\r\n\r\nfunction tentarParse(raw) {\r\n  const cleaned = limparMarkdown(raw);\r\n  if (!cleaned) return null;\r\n  try {\r\n    return JSON.parse(cleaned);\r\n  } catch {}\r\n  const start = cleaned.indexOf('{');\r\n  if (start < 0) return null;\r\n  const slice = cleaned.slice(start);\r\n  try {\r\n    return JSON.parse(slice);\r\n  } catch {\r\n    return repararJsonTruncado(slice);\r\n  }\r\n}\r\n\r\nfunction n(v) {\r\n  const x = Number(v);\r\n  return Number.isFinite(x) ? x : 0;\r\n}\r\n\r\nfunction valorMetrica(c, nome) {\r\n  const m = (c.metricas || []).find((x) => x.nome === nome);\r\n  return m ? n(m.valor) : n(c[nome]) || 0;\r\n}\r\n\r\nfunction scoreHeuristic(row) {\r\n  let score = 42;\r\n  const ctr = valorMetrica(row, 'CTR') || n(row.ctr);\r\n  const mensagens = valorMetrica(row, 'Conversas no WhatsApp') || n(row.mensagens);\r\n  const leads = valorMetrica(row, 'Leads') || n(row.leads);\r\n  if (ctr >= 2) score += 18;\r\n  else if (ctr >= 1) score += 8;\r\n  if (mensagens >= 80) score += 20;\r\n  else if (mensagens >= 30) score += 12;\r\n  if (leads >= 8) score += 20;\r\n  else if (leads >= 3) score += 10;\r\n  return Math.min(100, score);\r\n}\r\n\r\nfunction statusLabel(score) {\r\n  if (score >= 80) return 'Excelente';\r\n  if (score >= 60) return 'Boa';\r\n  if (score >= 40) return 'Atenção';\r\n  return 'Crítica';\r\n}\r\n\r\nfunction agregarMetricasResumo(campanhas) {\r\n  const map = new Map();\r\n  for (const c of campanhas) {\r\n    for (const m of c.metricas || []) {\r\n      if (!m?.nome) continue;\r\n      const fmt = m.formato || 'numero';\r\n      if (fmt === 'percentual' || fmt === 'decimal') continue;\r\n      if (!map.has(m.nome)) {\r\n        map.set(m.nome, { nome: m.nome, valor: 0, formato: fmt, origem: m.origem });\r\n      }\r\n      map.get(m.nome).valor += n(m.valor);\r\n    }\r\n  }\r\n  return [...map.values()].map((m) => ({\r\n    ...m,\r\n    valor: m.formato === 'moeda' ? Number(m.valor.toFixed(2)) : Math.round(m.valor * 100) / 100,\r\n  }));\r\n}\r\n\r\nfunction campanhaFromEmb(row) {\r\n  const metricas = Array.isArray(row.metricas) ? row.metricas : [];\r\n  const score = scoreHeuristic(row);\r\n  return {\r\n    nome: row.nome || row.campanha || 'Campanha',\r\n    objetivo: row.objetivo ?? null,\r\n    metricas,\r\n    spend: valorMetrica(row, 'Valor investido') || n(row.spend),\r\n    ctr: valorMetrica(row, 'CTR') || n(row.ctr),\r\n    cpm: valorMetrica(row, 'CPM') || n(row.cpm),\r\n    leads: valorMetrica(row, 'Leads') || n(row.leads),\r\n    mensagens: valorMetrica(row, 'Conversas no WhatsApp') || n(row.mensagens),\r\n    frequencia: valorMetrica(row, 'Frequência') || n(row.frequencia),\r\n    score,\r\n    status: statusLabel(score),\r\n    pontos_fortes: [],\r\n    pontos_fracos: [],\r\n    recomendacoes: [],\r\n    criativos: Array.isArray(row.criativos) ? row.criativos : [],\r\n  };\r\n}\r\n\r\nfunction buildKpis(campanhas) {\r\n  const metricas_resumo = agregarMetricasResumo(campanhas);\r\n  let melhor_campanha = '—';\r\n  let best = -1;\r\n  for (const c of campanhas) {\r\n    const spend = valorMetrica(c, 'Valor investido');\r\n    const v = spend;\r\n    if (v > best) {\r\n      best = v;\r\n      melhor_campanha = c.nome;\r\n    }\r\n  }\r\n  const investimento = metricas_resumo.find((m) => m.nome === 'Valor investido')?.valor ?? 0;\r\n  return {\r\n    metricas_resumo,\r\n    melhor_campanha,\r\n    investimento_total: investimento,\r\n    leads_totais: metricas_resumo.find((m) => m.nome === 'Leads')?.valor ?? 0,\r\n    mensagens_totais: metricas_resumo.find((m) => m.nome === 'Conversas no WhatsApp')?.valor ?? 0,\r\n  };\r\n}\r\n\r\nfunction buildFromEmb(msg) {\r\n  const campanhas = emb.map(campanhaFromEmb);\r\n  return {\r\n    kpis: buildKpis(campanhas),\r\n    campanhas,\r\n    insights_gerais: [msg],\r\n    acoes_recomendadas: ['Revise o retorno do Claude ou aumente max_tokens.'],\r\n    _parse_fallback: true,\r\n  };\r\n}\r\n\r\nconst porNome = {};\r\nfor (const row of emb) {\r\n  if (row.campanha) porNome[String(row.campanha)] = row;\r\n  if (row.nome) porNome[String(row.nome)] = row;\r\n}\r\n\r\nfunction garantirExtras(c, embRow) {\r\n  const enriched = embRow || porNome[String(c.nome ?? '')] || null;\r\n  const metricasEmb = enriched?.metricas || [];\r\n  const metricasClaude = Array.isArray(c.metricas) ? c.metricas : [];\r\n  const metricas =\r\n    metricasEmb.length >= metricasClaude.length ? metricasEmb : metricasClaude.length ? metricasClaude : metricasEmb;\r\n\r\n  const merged = { ...enriched, ...c, metricas };\r\n  const score = c.score ?? scoreHeuristic(merged);\r\n\r\n  return {\r\n    ...c,\r\n    nome: c.nome || enriched?.nome || enriched?.campanha || 'Campanha',\r\n    objetivo: c.objetivo ?? enriched?.objetivo ?? null,\r\n    metricas,\r\n    score,\r\n    status: c.status || statusLabel(score),\r\n    criativos:\r\n      Array.isArray(c.criativos) && c.criativos.length ? c.criativos : enriched?.criativos ?? [],\r\n  };\r\n}\r\n\r\nfunction mergeClaudeCampanha(claudeC) {\r\n  const embRow = porNome[String(claudeC.nome ?? '')] || null;\r\n  const base = embRow ? campanhaFromEmb(embRow) : { metricas: [] };\r\n  return garantirExtras({ ...base, ...claudeC }, embRow);\r\n}\r\n\r\nconst rawText = textoClaude(resClaude);\r\nconst stopReason = resClaude.stop_reason ?? null;\r\nconst parsed = tentarParse(rawText);\r\nconst embCampanhas = emb.map(campanhaFromEmb);\r\n\r\nlet saida;\r\n\r\nif (parsed?.kpis && Array.isArray(parsed.campanhas)) {\r\n  saida = parsed;\r\n  if (stopReason === 'max_tokens') {\r\n    saida._claude_truncated = true;\r\n    saida.insights_gerais = Array.isArray(saida.insights_gerais) ? saida.insights_gerais : [];\r\n    saida.insights_gerais.unshift(\r\n      'Resposta do Claude cortada. Métricas preservadas da Meta.'\r\n    );\r\n  }\r\n} else if (parsed?.campanhas?.length) {\r\n  const merged = parsed.campanhas.map(mergeClaudeCampanha);\r\n  for (const ec of embCampanhas) {\r\n    if (!merged.some((m) => String(m.nome) === String(ec.nome))) merged.push(ec);\r\n  }\r\n  saida = {\r\n    kpis: parsed.kpis?.metricas_resumo ? parsed.kpis : buildKpis(merged),\r\n    campanhas: merged,\r\n    insights_gerais: parsed.insights_gerais || [],\r\n    acoes_recomendadas: parsed.acoes_recomendadas || [],\r\n    _claude_truncated: stopReason === 'max_tokens',\r\n    _parse_partial: true,\r\n  };\r\n} else {\r\n  saida = buildFromEmb(\r\n    stopReason === 'max_tokens'\r\n      ? 'Claude cortou o JSON. Dashboard montado só com métricas da Meta.'\r\n      : 'JSON do Claude inválido. Dashboard montado só com métricas da Meta.'\r\n  );\r\n  const partial = tentarParse(rawText);\r\n  if (partial?.campanhas?.length) {\r\n    saida.campanhas = partial.campanhas.map(mergeClaudeCampanha);\r\n    for (const ec of embCampanhas) {\r\n      if (!saida.campanhas.some((m) => String(m.nome) === String(ec.nome))) saida.campanhas.push(ec);\r\n    }\r\n  }\r\n}\r\n\r\nif (!saida.kpis) saida.kpis = buildKpis(saida.campanhas || embCampanhas);\r\nif (!saida.kpis.metricas_resumo?.length) {\r\n  saida.kpis = { ...saida.kpis, ...buildKpis(saida.campanhas || embCampanhas) };\r\n}\r\nif (!Array.isArray(saida.campanhas) || !saida.campanhas.length) {\r\n  saida.campanhas = embCampanhas;\r\n  saida.kpis = buildKpis(saida.campanhas);\r\n}\r\n\r\nsaida.campanhas = saida.campanhas.map((c) => mergeClaudeCampanha(c));\r\nif (!Array.isArray(saida.insights_gerais)) saida.insights_gerais = [];\r\nif (!Array.isArray(saida.acoes_recomendadas)) saida.acoes_recomendadas = [];\r\n\r\nreturn [{ json: saida }];\r\n"
+      },
+      "id": "c18169a2-5fae-451f-8df5-b5d6b162bcc2",
+      "name": "Montar Resposta Webhook",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -96,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "listar-obj",
+              "leftValue": "={{ $('📋 Lista Destaque Odonto').first().json.body.listar_objetivos }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-listar-obj-0001",
+      "name": "🔀 Listar só objetivos?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1088,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const res = $input.first()?.json ?? {};\r\nconst todas = Array.isArray(res.data) ? res.data : [];\r\n\r\nfunction campanhaAtiva(c) {\r\n  const st = String(c.effective_status || c.status || '').toUpperCase();\r\n  return st === 'ACTIVE';\r\n}\r\n\r\nconst ativas = todas.filter(campanhaAtiva);\r\nconst semObjetivo = ativas.filter((c) => !c.objective).length;\r\n\r\nconst porObjetivo = {};\r\nfor (const c of ativas) {\r\n  const value = c.objective ? String(c.objective) : null;\r\n  if (!value) continue;\r\n  if (!porObjetivo[value]) {\r\n    porObjetivo[value] = { value, campanhas: 0, nomes: [] };\r\n  }\r\n  porObjetivo[value].campanhas += 1;\r\n  if (c.name) porObjetivo[value].nomes.push(String(c.name));\r\n}\r\n\r\nconst objetivos = Object.values(porObjetivo)\r\n  .sort((a, b) => b.campanhas - a.campanhas)\r\n  .map((o) => {\r\n    const exemplo = o.nomes.slice(0, 2).join(' · ');\r\n    const label = exemplo\r\n      ? `${o.value} — ${exemplo}`\r\n      : `${o.value} (${o.campanhas} ativa${o.campanhas > 1 ? 's' : ''})`;\r\n    return {\r\n      value: o.value,\r\n      label,\r\n      campanhas: o.campanhas,\r\n      campanhas_nomes: o.nomes,\r\n    };\r\n  });\r\n\r\nreturn [\r\n  {\r\n    json: {\r\n      tipo: 'objetivos',\r\n      objetivos,\r\n      atualizado_em: new Date().toISOString(),\r\n      total_campanhas_ativas: ativas.length,\r\n      total_objetivos_distintos: objetivos.length,\r\n      campanhas_sem_objetivo: semObjetivo,\r\n      total_campanhas_conta: todas.length,\r\n      fonte: 'meta_api',\r\n    },\r\n  },\r\n];\r\n"
+      },
+      "id": "montar-obj-0002",
+      "name": "📤 Montar lista objetivos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -880,
+        96
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Claude Analise Completa": {
+      "main": [
+        [
+          {
+            "node": "Montar Resposta Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📊 Meta — Insights": {
+      "main": [
+        [
+          {
+            "node": "Processar Dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar Dados": {
+      "main": [
+        [
+          {
+            "node": "▶ Ads: disparar 1 vez",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "▶ Ads: disparar 1 vez": {
+      "main": [
+        [
+          {
+            "node": "🎨 Meta — Listar anúncios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎨 Meta — Listar anúncios": {
+      "main": [
+        [
+          {
+            "node": "⚙️ Agregar ads por campanha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚙️ Agregar ads por campanha": {
+      "main": [
+        [
+          {
+            "node": "🔗 Mesclar métricas + criativos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔗 Mesclar métricas + criativos": {
+      "main": [
+        [
+          {
+            "node": "Montar Claude Body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar Claude Body": {
+      "main": [
+        [
+          {
+            "node": "Claude Analise Completa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Lista Destaque Odonto": {
+      "main": [
+        [
+          {
+            "node": "📂 Meta — Listar campanhas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "📋 Lista Destaque Odonto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar Resposta Webhook": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📂 Meta — Listar campanhas": {
+      "main": [
+        [
+          {
+            "node": "🔀 Listar só objetivos?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtrar campanhas (objetivo)": {
+      "main": [
+        [
+          {
+            "node": "📊 Meta — Insights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔀 Listar só objetivos?": {
+      "main": [
+        [
+          {
+            "node": "📤 Montar lista objetivos",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Filtrar campanhas (objetivo)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📤 Montar lista objetivos": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "UPDATED-local-2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cf9de0c1e1ef2f4e61cf34150574ebb9cd7927c96595e584b489bf5a5cd99b13"
+  },
+  "tags": []
+}

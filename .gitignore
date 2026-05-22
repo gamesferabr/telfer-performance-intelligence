@@ -1,0 +1,6 @@
+# Segredos e config gerada localmente
+.env
+js/config.js
+
+# Editor
+.vscode/

@@ -3,515 +3,130 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Telfer Performance Intelligence</title>
-
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: Inter, Arial, sans-serif;
-    }
-
-    body {
-      background: #0b1020;
-      color: white;
-      padding: 30px;
-    }
-
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 30px;
-    }
-
-    .title {
-      font-size: 32px;
-      font-weight: 700;
-    }
-
-    .subtitle {
-      color: #94a3b8;
-      margin-top: 8px;
-    }
-
-    .grid-kpis {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 20px;
-      margin-bottom: 30px;
-    }
-
-    .card {
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 18px;
-      padding: 24px;
-      backdrop-filter: blur(10px);
-      transition: 0.3s;
-    }
-
-    .card:hover {
-      transform: translateY(-3px);
-      border-color: rgba(99,102,241,0.6);
-    }
-
-    .card-title {
-      color: #94a3b8;
-      font-size: 14px;
-      margin-bottom: 12px;
-    }
-
-    .card-value {
-      font-size: 32px;
-      font-weight: 700;
-    }
-
-    .charts {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
-      gap: 20px;
-      margin-bottom: 30px;
-    }
-
-    .chart-card {
-      background: rgba(255,255,255,0.05);
-      border-radius: 18px;
-      padding: 20px;
-      height: 420px;
-    }
-
-    .section-title {
-      font-size: 24px;
-      margin-bottom: 20px;
-      font-weight: 700;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: rgba(255,255,255,0.05);
-      border-radius: 18px;
-      overflow: hidden;
-      margin-bottom: 30px;
-    }
-
-    th {
-      background: rgba(99,102,241,0.15);
-      color: white;
-      text-align: left;
-      padding: 16px;
-      font-size: 14px;
-    }
-
-    td {
-      padding: 16px;
-      border-top: 1px solid rgba(255,255,255,0.05);
-      font-size: 14px;
-    }
-
-    .badge {
-      padding: 6px 12px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    .excelente {
-      background: rgba(34,197,94,0.2);
-      color: #22c55e;
-    }
-
-    .boa {
-      background: rgba(59,130,246,0.2);
-      color: #3b82f6;
-    }
-
-    .atencao {
-      background: rgba(234,179,8,0.2);
-      color: #eab308;
-    }
-
-    .critica {
-      background: rgba(239,68,68,0.2);
-      color: #ef4444;
-    }
-
-    .insights {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-      gap: 20px;
-      margin-bottom: 30px;
-    }
-
-    .insight-card {
-      background: rgba(255,255,255,0.05);
-      border-radius: 18px;
-      padding: 24px;
-    }
-
-    ul {
-      margin-top: 16px;
-      padding-left: 20px;
-    }
-
-    li {
-      margin-bottom: 10px;
-      color: #cbd5e1;
-    }
-
-    .footer {
-      margin-top: 40px;
-      text-align: center;
-      color: #64748b;
-      font-size: 14px;
-    }
-
-    @media(max-width: 768px){
-      .charts {
-        grid-template-columns: 1fr;
-      }
-
-      .chart-card {
-        height: 350px;
-      }
-    }
-  </style>
+  <title>Telfer performance intelligence</title>
+  <link rel="icon" type="image/png" href="LOGO_V2-PRETOEVERMELHO.png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="LOGO_V2-PRETOEVERMELHO.png" />
+  <meta name="theme-color" content="#c41e3a" />
+  <link rel="stylesheet" href="css/telfer.css" />
 </head>
 <body>
-
-  <div class="header">
-    <div>
-      <div class="title">📊 Telfer Performance Intelligence</div>
-      <div class="subtitle">Dashboard Meta Ads</div>
-    </div>
-
-    <div style="display:flex; gap:12px; align-items:center;">
-      <button id="generateBtn" style="
-        background: linear-gradient(135deg,#6366f1,#8b5cf6);
-        color:white;
-        border:none;
-        padding:14px 22px;
-        border-radius:14px;
-        font-weight:700;
-        cursor:pointer;
-        transition:0.3s;
-        box-shadow:0 10px 30px rgba(99,102,241,0.3);
-      ">
-        🚀 Gerar Relatório
-      </button>
-
-      <button id="reloadBtn" style="
-        background: rgba(255,255,255,0.08);
-        color:white;
-        border:1px solid rgba(255,255,255,0.08);
-        padding:14px 22px;
-        border-radius:14px;
-        font-weight:700;
-        cursor:pointer;
-        display:none;
-      ">
-        🔄 Gerar Novo Relatório
-      </button>
-
-      <div id="loading" style="display:none; color:#94a3b8;">
-        Processando campanhas...
+  <div class="page">
+    <header class="app-header">
+      <div class="header-top">
+        <div class="brand-lockup">
+          <img
+            class="logo-horizontal"
+            src="logo - horizontal - vermelho e preto.png"
+            alt="Telfer Company"
+            width="260"
+            height="44"
+          />
+          <div class="brand-copy">
+            <h1>performance intelligence</h1>
+            <p>destaque odonto diadema</p>
+          </div>
+        </div>
+        <div class="header-top-end">
+          <time id="date" class="report-date"></time>
+          <a href="analise.html" class="link-nav link-pill">análise de criativos</a>
+        </div>
       </div>
 
-      <div id="date"></div>
-    </div>
+      <div class="control-panel">
+        <div class="control-grid">
+          <label class="field">
+            <span class="field-label">data início</span>
+            <input type="date" id="dataInicio" class="input" />
+          </label>
+          <label class="field">
+            <span class="field-label">data fim</span>
+            <input type="date" id="dataFim" class="input" />
+          </label>
+          <label class="field field-span-2">
+            <span class="field-label">objetivo campanha</span>
+            <div class="field-inline">
+              <select id="objetivoCampanha" class="select">
+                <option value="">Todos</option>
+              </select>
+              <button
+                type="button"
+                id="refreshObjetivosBtn"
+                class="btn btn-icon"
+                title="Buscar objetivos ativos na Meta"
+                aria-label="Atualizar objetivos na Meta"
+              >
+                ↻
+              </button>
+            </div>
+          </label>
+        </div>
+
+        <div class="control-actions">
+          <button type="button" id="generateBtn" class="btn btn-primary">
+            gerar relatório
+          </button>
+          <button type="button" id="reloadBtn" class="btn btn-secondary is-hidden">
+            gerar novo relatório
+          </button>
+          <span id="loading" class="status-pill is-hidden">processando…</span>
+        </div>
+
+        <p id="objetivosMeta" class="control-hint"></p>
+      </div>
+    </header>
+
+    <div id="alertBanner" class="alert is-hidden" role="status"></div>
+
+    <section class="section-block">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">resumo</h2>
+          <p class="section-sub">métricas que a Meta retornou</p>
+        </div>
+        <span class="scroll-hint" aria-hidden="true">arraste →</span>
+      </div>
+      <div class="kpis-scroll" tabindex="0" aria-label="Métricas resumo — role para o lado">
+        <div class="kpis-track" id="kpisGrid"></div>
+      </div>
+    </section>
+
+    <section class="section-block">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">campanhas</h2>
+          <p class="section-sub">métricas por campanha</p>
+        </div>
+      </div>
+      <div id="campanhasContainer" class="campanhas-list"></div>
+    </section>
+
+    <section class="section-block">
+      <div class="insights">
+        <div class="insight-card">
+          <h2 class="insight-title">insights</h2>
+          <ul id="insightsList"></ul>
+        </div>
+        <div class="insight-card">
+          <h2 class="insight-title">recomendações</h2>
+          <ul id="recommendationsList"></ul>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <img
+        class="logo-horizontal footer-logo"
+        src="logo - horizontal - vermelho e preto.png"
+        alt="Telfer Company"
+        width="180"
+        height="28"
+      />
+      <span>telfer performance intelligence © 2026</span>
+    </footer>
   </div>
 
-  <div class="grid-kpis">
-
-    <div class="card">
-      <div class="card-title">Investimento Total</div>
-      <div class="card-value" id="investimentoTotal">R$ 0</div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">Leads Totais</div>
-      <div class="card-value" id="leadsTotal">0</div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">Mensagens Totais</div>
-      <div class="card-value" id="mensagensTotal">0</div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">CTR Médio</div>
-      <div class="card-value" id="ctrMedio">0%</div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">CPM Médio</div>
-      <div class="card-value" id="cpmMedio">R$ 0</div>
-    </div>
-
-  </div>
-
-  <div class="charts">
-
-    <div class="chart-card">
-      <canvas id="spendChart"></canvas>
-    </div>
-
-    <div class="chart-card">
-      <canvas id="ctrChart"></canvas>
-    </div>
-
-    <div class="chart-card">
-      <canvas id="leadsChart"></canvas>
-    </div>
-
-    <div class="chart-card">
-      <canvas id="mensagensChart"></canvas>
-    </div>
-
-  </div>
-
-  <div class="section-title">📋 Campanhas</div>
-
-  <table>
-    <thead>
-      <tr>
-        <th>Campanha</th>
-        <th>Spend</th>
-        <th>CTR</th>
-        <th>CPM</th>
-        <th>Leads</th>
-        <th>Mensagens</th>
-        <th>Freq.</th>
-        <th>Score</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-
-    <tbody id="campaignTable"></tbody>
-  </table>
-
-  <div class="insights">
-
-    <div class="insight-card">
-      <h2>🔥 Insights</h2>
-      <ul id="insightsList"></ul>
-    </div>
-
-    <div class="insight-card">
-      <h2>🎯 Recomendações</h2>
-      <ul id="recommendationsList"></ul>
-    </div>
-
-  </div>
-
-  <div class="footer">
-    Telfer Performance Intelligence © 2026
-  </div>
-
-  <script>
-
-    // ==========================
-    // ESTADO GLOBAL
-    // ==========================
-
-    let data = null;
-
-    const API_URL = 'https://n8n-n8n.i9yfhk.easypanel.host/webhook/4199b300-2046-450d-9dcf-c18ea731f4e7';
-
-    // ==========================
-    // BOTÕES
-    // ==========================
-
-    const generateBtn = document.getElementById('generateBtn');
-    const reloadBtn = document.getElementById('reloadBtn');
-    const loading = document.getElementById('loading');
-
-    generateBtn.addEventListener('click', gerarRelatorio);
-    reloadBtn.addEventListener('click', gerarRelatorio);
-
-    async function gerarRelatorio() {
-
-      loading.style.display = 'block';
-
-      generateBtn.disabled = true;
-      reloadBtn.disabled = true;
-
-      try {
-
-        const response = await fetch(API_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            gerar: true,
-            data: new Date().toISOString()
-          })
-        });
-
-        data = await response.json();
-
-        renderDashboard();
-
-        reloadBtn.style.display = 'inline-block';
-
-      } catch (error) {
-
-        alert('Erro ao gerar relatório');
-
-        console.error(error);
-
-      } finally {
-
-        loading.style.display = 'none';
-
-        generateBtn.disabled = false;
-        reloadBtn.disabled = false;
-      }
-    }
-
-    // ==========================
-    // RENDER DASHBOARD
-    // ==========================
-
-    function renderDashboard() {
-
-      if (!data) return;
-
-      document.getElementById('date').innerText =
-        new Date().toLocaleDateString('pt-BR');
-
-      document.getElementById('investimentoTotal').innerText =
-        `R$ ${data.kpis.investimento_total.toFixed(2)}`;
-
-      document.getElementById('leadsTotal').innerText =
-        data.kpis.leads_totais;
-
-      document.getElementById('mensagensTotal').innerText =
-        data.kpis.mensagens_totais;
-
-      document.getElementById('ctrMedio').innerText =
-        `${data.kpis.ctr_medio}%`;
-
-      document.getElementById('cpmMedio').innerText =
-        `R$ ${data.kpis.cpm_medio}`;
-
-      const table = document.getElementById('campaignTable');
-
-      table.innerHTML = '';
-
-      data.campanhas.forEach(c => {
-
-        const badgeClass =
-          c.status === 'Excelente' ? 'excelente' :
-          c.status === 'Boa' ? 'boa' :
-          c.status === 'Atenção' ? 'atencao' :
-          'critica';
-
-        table.innerHTML += `
-          <tr>
-            <td>${c.nome}</td>
-            <td>R$ ${c.spend}</td>
-            <td>${c.ctr}%</td>
-            <td>R$ ${c.cpm}</td>
-            <td>${c.leads}</td>
-            <td>${c.mensagens}</td>
-            <td>${c.frequencia}</td>
-            <td>${c.score}</td>
-            <td>
-              <span class="badge ${badgeClass}">
-                ${c.status}
-              </span>
-            </td>
-          </tr>
-        `;
-      });
-
-      const insightsList = document.getElementById('insightsList');
-      insightsList.innerHTML = '';
-
-      data.insights_gerais.forEach(i => {
-        insightsList.innerHTML += `<li>${i}</li>`;
-      });
-
-      const recommendationsList = document.getElementById('recommendationsList');
-      recommendationsList.innerHTML = '';
-
-      data.acoes_recomendadas.forEach(i => {
-        recommendationsList.innerHTML += `<li>${i}</li>`;
-      });
-
-      const labels = data.campanhas.map(c => c.nome);
-
-      new Chart(document.getElementById('spendChart'), {
-        type: 'bar',
-        data: {
-          labels,
-          datasets: [{
-            label: 'Investimento',
-            data: data.campanhas.map(c => c.spend),
-            borderRadius: 10
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false
-        }
-      });
-
-      new Chart(document.getElementById('ctrChart'), {
-        type: 'line',
-        data: {
-          labels,
-          datasets: [{
-            label: 'CTR',
-            data: data.campanhas.map(c => c.ctr),
-            tension: 0.4
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false
-        }
-      });
-
-      new Chart(document.getElementById('leadsChart'), {
-        type: 'doughnut',
-        data: {
-          labels,
-          datasets: [{
-            label: 'Leads',
-            data: data.campanhas.map(c => c.leads)
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false
-        }
-      });
-
-      new Chart(document.getElementById('mensagensChart'), {
-        type: 'polarArea',
-        data: {
-          labels,
-          datasets: [{
-            label: 'Mensagens',
-            data: data.campanhas.map(c => c.mensagens)
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false
-        }
-      });
-
-    }
-
-  </script>
-
+  <script src="telfer-storage.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/index.js"></script>
 </body>
 </html>

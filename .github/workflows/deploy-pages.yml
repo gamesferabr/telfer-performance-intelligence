@@ -1,0 +1,48 @@
+# Publica no GitHub Pages sem commitar .env nem js/config.js no repositório.
+# Configure em: Settings → Secrets and variables → Actions
+#   N8N_HOST, WEBHOOK_ID
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Gerar js/config.js a partir dos secrets
+        env:
+          N8N_HOST: ${{ secrets.N8N_HOST }}
+          WEBHOOK_ID: ${{ secrets.WEBHOOK_ID }}
+        run: |
+          if [ -z "$N8N_HOST" ] || [ -z "$WEBHOOK_ID" ]; then
+            echo "::error::Defina os secrets N8N_HOST e WEBHOOK_ID no repositório."
+            exit 1
+          fi
+          printf 'N8N_HOST=%s\nWEBHOOK_ID=%s\nWEBHOOK_MODE=prod\n' "$N8N_HOST" "$WEBHOOK_ID" > .env
+          node scripts/generate-config.js
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
