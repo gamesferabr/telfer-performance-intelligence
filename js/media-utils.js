@@ -3,6 +3,23 @@
  * Vídeo: thumb nativa primeiro (qualidade baixa OK). Imagem: tenta HD com fallback.
  */
 (function (global) {
+  function normalizarCriativo(cr) {
+    if (!cr || typeof cr !== 'object') return null;
+    const ad_id = String(cr.ad_id || cr.id || '');
+    const thumbnail_url = cr.thumbnail_url || cr.thumbnail || '';
+    const image_url = cr.image_url || cr.url_imagem || '';
+    const video_id = cr.video_id || null;
+    return {
+      ad_id,
+      nome: cr.nome || cr.name || cr.title || 'Anúncio',
+      status: cr.status || cr.effective_status || cr.status_effective || '',
+      thumbnail_url,
+      image_url,
+      video_id,
+      tipo: cr.tipo || (video_id ? 'video' : 'imagem'),
+    };
+  }
+
   function ampliarUrlFacebook(url) {
     if (!url || typeof url !== 'string') return url;
 
@@ -33,7 +50,8 @@
   }
 
   function urlsCriativo(cr) {
-    if (!cr || typeof cr !== 'object') {
+    const row = normalizarCriativo(cr) || cr;
+    if (!row || typeof row !== 'object') {
       return {
         primary: null,
         fallback: null,
@@ -43,11 +61,11 @@
       };
     }
 
-    const thumb = cr.thumbnail_url || cr.thumbnail || null;
-    const image = cr.image_url || cr.url_imagem || null;
-    const picture = cr.picture_url || cr.picture || null;
-    const preview = cr.preview_url || null;
-    const isVideo = Boolean(cr.video_id || cr.tipo === 'video');
+    const thumb = row.thumbnail_url || row.thumbnail || null;
+    const image = row.image_url || row.url_imagem || null;
+    const picture = row.picture_url || row.picture || null;
+    const preview = row.preview_url || null;
+    const isVideo = Boolean(row.video_id || row.tipo === 'video');
 
     const todas = [thumb, image, picture, preview].filter(Boolean);
     if (!todas.length) {
@@ -119,6 +137,7 @@
   }
 
   global.TelferMedia = {
+    normalizarCriativo,
     ampliarUrlFacebook,
     urlsCriativo,
     onImgError,

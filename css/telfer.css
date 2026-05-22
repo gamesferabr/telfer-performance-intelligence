@@ -697,6 +697,35 @@ a {
   gap: 18px;
 }
 
+.criativos-panel {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.grid-criativos--dashboard {
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.criativo--compact .criativo-media {
+  aspect-ratio: 1;
+}
+
+.criativo--compact .criativo-body {
+  padding: 8px 10px 10px;
+}
+
+.criativo--compact .nome {
+  font-size: 0.75rem;
+  margin-bottom: 0;
+}
+
+.criativos-empty {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+}
+
 .criativo {
   background: var(--surface);
   border-radius: var(--radius-lg);

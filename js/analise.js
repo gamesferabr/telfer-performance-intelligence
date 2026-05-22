@@ -42,7 +42,7 @@
       dataFb +
       dataThumb +
       ' alt="" loading="lazy" decoding="async" ' +
-      'onerror="TelferMedia.onImgError(this)" />' +
+      'referrerpolicy="no-referrer" onerror="TelferMedia.onImgError(this)" />' +
       '</div>'
     );
   }
@@ -84,11 +84,14 @@
     for (const c of campanhas) {
       const nome = esc(c.nome ?? c.name ?? 'Campanha');
       const objetivo = c.objetivo ?? c.objective ?? null;
-      const criativos = Array.isArray(c.criativos)
+      const rawCriativos = Array.isArray(c.criativos)
         ? c.criativos
         : Array.isArray(c.ads)
           ? c.ads
           : [];
+      const criativos = rawCriativos
+        .map((cr) => (TelferMedia.normalizarCriativo ? TelferMedia.normalizarCriativo(cr) : cr))
+        .filter(Boolean);
 
       html += '<article class="campanha campanha-analise">';
       html += '<h2>' + nome + '</h2>';
