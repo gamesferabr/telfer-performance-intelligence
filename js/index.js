@@ -63,15 +63,124 @@
       .replace(/"/g, '&quot;');
   }
 
-  function defaultsDatas() {
-    const fim = new Date();
-    const ini = new Date();
-    ini.setDate(ini.getDate() - 30);
-    const iso = (d) => d.toISOString().slice(0, 10);
+  const PERIODO_MAX_DIAS = 7;
+
+  function hojeIso() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  function parseIsoDate(s) {
+    if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
+    const [y, m, d] = s.split('-').map(Number);
+    return new Date(Date.UTC(y, m - 1, d));
+  }
+
+  function addDiasIso(iso, delta) {
+    const dt = parseIsoDate(iso);
+    if (!dt) return iso;
+    dt.setUTCDate(dt.getUTCDate() + delta);
+    return dt.toISOString().slice(0, 10);
+  }
+
+  function diasNoPeriodo(ini, fim) {
+    const a = parseIsoDate(ini);
+    const b = parseIsoDate(fim);
+    if (!a || !b) return 0;
+    return Math.floor((b - a) / 86400000) + 1;
+  }
+
+  function ajustarPeriodoMax7(ini, fim) {
+    const hoje = hojeIso();
+    let data_inicio = ini || addDiasIso(hoje, -(PERIODO_MAX_DIAS - 1));
+    let data_fim = fim || hoje;
+    if (parseIsoDate(data_inicio) > parseIsoDate(data_fim)) data_fim = data_inicio;
+    if (parseIsoDate(data_fim) > parseIsoDate(hoje)) data_fim = hoje;
+    if (diasNoPeriodo(data_inicio, data_fim) > PERIODO_MAX_DIAS) {
+      data_fim = addDiasIso(data_inicio, PERIODO_MAX_DIAS - 1);
+      if (parseIsoDate(data_fim) > parseIsoDate(hoje)) {
+        data_fim = hoje;
+        data_inicio = addDiasIso(hoje, -(PERIODO_MAX_DIAS - 1));
+      }
+    }
+    return { data_inicio, data_fim };
+  }
+
+  function aplicarLimitesInputsDatas(origem) {
     const elIni = document.getElementById('dataInicio');
     const elFim = document.getElementById('dataFim');
-    if (!elIni.value) elIni.value = iso(ini);
-    if (!elFim.value) elFim.value = iso(fim);
+    if (!elIni || !elFim) return;
+
+    const hoje = hojeIso();
+    elIni.max = hoje;
+    elFim.max = hoje;
+
+    let ini = elIni.value;
+    let fim = elFim.value;
+    if (!ini && !fim) return;
+
+    const ajustado = ajustarPeriodoMax7(ini || undefined, fim || undefined);
+    ini = ajustado.data_inicio;
+    fim = ajustado.data_fim;
+
+    if (origem === 'inicio') {
+      const maxFim = addDiasIso(ini, PERIODO_MAX_DIAS - 1);
+      elFim.min = ini;
+      elFim.max = maxFim > hoje ? hoje : maxFim;
+      if (fim < ini) fim = ini;
+      if (fim > elFim.max) fim = elFim.max;
+      elIni.min = addDiasIso(fim, -(PERIODO_MAX_DIAS - 1));
+      elIni.max = fim;
+    } else if (origem === 'fim') {
+      const minIni = addDiasIso(fim, -(PERIODO_MAX_DIAS - 1));
+      elIni.min = minIni;
+      elIni.max = fim;
+      if (ini > fim) ini = fim;
+      if (ini < minIni) ini = minIni;
+      const maxFim = addDiasIso(ini, PERIODO_MAX_DIAS - 1);
+      elFim.min = ini;
+      elFim.max = maxFim > hoje ? hoje : maxFim;
+    } else {
+      elIni.min = addDiasIso(fim, -(PERIODO_MAX_DIAS - 1));
+      elIni.max = fim;
+      elFim.min = ini;
+      elFim.max = addDiasIso(ini, PERIODO_MAX_DIAS - 1) > hoje ? hoje : addDiasIso(ini, PERIODO_MAX_DIAS - 1);
+    }
+
+    elIni.value = ini;
+    elFim.value = fim;
+  }
+
+  function validarPeriodoRelatorio() {
+    const elIni = document.getElementById('dataInicio');
+    const elFim = document.getElementById('dataFim');
+    aplicarLimitesInputsDatas();
+    const ini = elIni.value;
+    const fim = elFim.value;
+    if (!ini || !fim) {
+      return { ok: false, msg: 'Informe data início e data fim.' };
+    }
+    if (parseIsoDate(ini) > parseIsoDate(fim)) {
+      return { ok: false, msg: 'Data início não pode ser depois da data fim.' };
+    }
+    if (diasNoPeriodo(ini, fim) > PERIODO_MAX_DIAS) {
+      return {
+        ok: false,
+        msg: `O período pode ter no máximo ${PERIODO_MAX_DIAS} dias.`,
+      };
+    }
+    return { ok: true, data_inicio: ini, data_fim: fim };
+  }
+
+  function defaultsDatas() {
+    const hoje = hojeIso();
+    const ini = addDiasIso(hoje, -(PERIODO_MAX_DIAS - 1));
+    const elIni = document.getElementById('dataInicio');
+    const elFim = document.getElementById('dataFim');
+    if (!elIni.value && !elFim.value) {
+      elIni.value = ini;
+      elFim.value = hoje;
+    }
+    aplicarLimitesInputsDatas();
   }
 
   function formatarMetrica(m) {
@@ -414,8 +523,12 @@
 
   function aplicarFiltrosNaTela(filtros) {
     if (!filtros) return;
-    if (filtros.data_inicio) document.getElementById('dataInicio').value = filtros.data_inicio;
-    if (filtros.data_fim) document.getElementById('dataFim').value = filtros.data_fim;
+    const elIni = document.getElementById('dataInicio');
+    const elFim = document.getElementById('dataFim');
+    const ajustado = ajustarPeriodoMax7(filtros.data_inicio, filtros.data_fim);
+    if (ajustado.data_inicio) elIni.value = ajustado.data_inicio;
+    if (ajustado.data_fim) elFim.value = ajustado.data_fim;
+    aplicarLimitesInputsDatas();
     if (filtros.objetivo != null) aplicarObjetivoNoSelect(filtros.objetivo || '');
   }
 
@@ -601,8 +714,14 @@
   refreshObjetivosBtn.addEventListener('click', () => carregarObjetivosMeta(false));
 
   document.getElementById('objetivoCampanha')?.addEventListener('change', persistirFiltrosNaSessao);
-  document.getElementById('dataInicio')?.addEventListener('change', persistirFiltrosNaSessao);
-  document.getElementById('dataFim')?.addEventListener('change', persistirFiltrosNaSessao);
+  document.getElementById('dataInicio')?.addEventListener('change', () => {
+    aplicarLimitesInputsDatas('inicio');
+    persistirFiltrosNaSessao();
+  });
+  document.getElementById('dataFim')?.addEventListener('change', () => {
+    aplicarLimitesInputsDatas('fim');
+    persistirFiltrosNaSessao();
+  });
 
   document.querySelector('a[href="analise.html"]')?.addEventListener('click', () => {
     if (data?.kpis || data?.campanhas?.length) {
@@ -632,8 +751,13 @@
     reloadBtn.disabled = true;
 
     try {
-      const dataInicio = document.getElementById('dataInicio').value;
-      const dataFim = document.getElementById('dataFim').value;
+      const periodo = validarPeriodoRelatorio();
+      if (!periodo.ok) {
+        alert(periodo.msg);
+        return;
+      }
+      const dataInicio = periodo.data_inicio;
+      const dataFim = periodo.data_fim;
       const objetivo = objetivoEscolhido;
 
       const payload = {
