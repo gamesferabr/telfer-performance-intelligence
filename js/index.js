@@ -29,8 +29,8 @@
     const url = montarUrlWebhook();
     if (url) return url;
     const msg =
-      'Configuração ausente: copie js/config.example.js para js/config.js ' +
-      'ou rode "node scripts/generate-config.js" (com .env na raiz).';
+      'Configuração ausente. Local: copie js/config.example.js → js/config.js ou rode ' +
+      '"node scripts/generate-config.js". No GitHub Pages: confira o deploy Actions e secrets N8N_HOST / WEBHOOK_ID.';
     console.error('[Telfer]', msg);
     alert(msg);
     throw new Error(msg);
