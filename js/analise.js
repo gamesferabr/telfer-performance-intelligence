@@ -14,7 +14,17 @@
   function htmlImagemCriativo(cr) {
     const urls = TelferMedia.urlsCriativo(cr);
     const src = urls.primary || urls.thumbRaw || urls.fallback;
-    if (!src) return '';
+    if (!src) {
+      if (urls.isVideo) {
+        return (
+          '<div class="criativo-media criativo-media--sem-url">' +
+          '<span class="criativo-tag-video">vídeo</span>' +
+          '<span class="criativo-sem-preview">Preview indisponível na Meta — regenere o relatório após importar o workflow novo.</span>' +
+          '</div>'
+        );
+      }
+      return '';
+    }
 
     const srcset =
       urls.srcset && !urls.isVideo

@@ -86,8 +86,8 @@
       const primary = thumb || image || picture || preview;
       const fallback = primeiroDiferente(primary, [image, picture, preview, thumb]);
       return {
-        primary,
-        fallback,
+        primary: primary || null,
+        fallback: fallback || null,
         thumbRaw: thumb,
         srcset: '',
         isVideo: true,
