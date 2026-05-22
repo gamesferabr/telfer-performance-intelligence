@@ -1,7 +1,10 @@
 # Segredos e config só-local (sobrescreve runtime-config no navegador)
 .env
 js/config.js
-# js/runtime-config.js é versionado para Pages (branch main)
+
+# Ferramentas n8n e scripts de build — só na máquina local (não publicar no Git)
+ferramentas-n8n/
+scripts/
 
 # Editor
 .vscode/

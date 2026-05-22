@@ -1,6 +1,5 @@
-# Publica no GitHub Pages sem commitar .env nem js/config.js no repositório.
-# Configure em: Settings → Secrets and variables → Actions
-#   N8N_HOST, WEBHOOK_ID
+# Publica no GitHub Pages. Secrets: N8N_HOST, WEBHOOK_ID (Settings → Actions).
+# Pastas scripts/ e ferramentas-n8n/ ficam só na máquina local (gitignore).
 name: Deploy GitHub Pages
 
 on:
@@ -26,18 +25,44 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Gerar js/config.js a partir dos secrets
+      - name: Injetar config Pages (secrets, sem scripts/ no repo)
         env:
           N8N_HOST: ${{ secrets.N8N_HOST }}
           WEBHOOK_ID: ${{ secrets.WEBHOOK_ID }}
+          FETCH_TIMEOUT_MS: 900000
         run: |
           if [ -z "$N8N_HOST" ] || [ -z "$WEBHOOK_ID" ]; then
             echo "::error::Defina os secrets N8N_HOST e WEBHOOK_ID no repositório."
             exit 1
           fi
-          printf 'N8N_HOST=%s\nWEBHOOK_ID=%s\nWEBHOOK_MODE=prod\nFETCH_TIMEOUT_MS=900000\n' "$N8N_HOST" "$WEBHOOK_ID" > .env
-          node scripts/generate-config.js
-          node scripts/inject-pages-config.js
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const host = process.env.N8N_HOST;
+          const webhookId = process.env.WEBHOOK_ID;
+          const fetchTimeoutMs = Number(process.env.FETCH_TIMEOUT_MS || 900000);
+          const cfg = { n8nHost: host, webhookId, webhookMode: 'prod', fetchTimeoutMs };
+          const inline = `<script>window.TELFER_CONFIG=${JSON.stringify(cfg)};</script>`;
+          const runtimeJs =
+            '/** Gerado no CI — GitHub Pages */\n' +
+            `window.TELFER_CONFIG = ${JSON.stringify(cfg, null, 2)};\n`;
+          fs.writeFileSync(path.join('js', 'runtime-config.js'), runtimeJs, 'utf8');
+          const tagRuntime = '<script src="js/runtime-config.js"></script>';
+          const tagConfig = '<script src="js/config.js"></script>';
+          for (const file of ['index.html', 'analise.html']) {
+            let html = fs.readFileSync(file, 'utf8');
+            if (html.includes(tagConfig)) html = html.replace(tagConfig, '');
+            if (html.includes(tagRuntime)) {
+              html = html.replace(tagRuntime, inline + '\n  ' + tagRuntime);
+            } else if (!html.includes('window.TELFER_CONFIG')) {
+              html = html.replace(
+                '<script src="js/index.js"></script>',
+                inline + '\n  <script src="js/index.js"></script>'
+              );
+            }
+            fs.writeFileSync(file, html, 'utf8');
+          }
+          NODE
 
       - name: Verificar config no artefato
         run: |
