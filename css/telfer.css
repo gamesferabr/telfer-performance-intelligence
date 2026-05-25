@@ -178,12 +178,13 @@ a {
   font-variant-numeric: tabular-nums;
   margin: 0;
   flex: 1 1 100%;
+  min-width: 0;
 }
 
 @media (min-width: 720px) {
   .periodo-chip {
-    flex: 0 1 auto;
-    margin-right: 4px;
+    flex: 1 1 280px;
+    margin-right: 8px;
   }
 }
 
@@ -630,9 +631,19 @@ a {
   font-size: 0.72rem;
   color: var(--red-dark);
   display: block;
-  margin-bottom: 8px;
-  font-weight: 300;
-  letter-spacing: 0.03em;
+  width: 100%;
+  margin: 0;
+  padding: 10px 12px 8px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-transform: uppercase;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.metricas-panel > .metricas-label {
+  border-radius: var(--radius) var(--radius) 0 0;
 }
 
 .metricas-list {
@@ -888,18 +899,18 @@ a {
   text-align: center;
   font-size: 0.82rem;
   font-weight: 500;
-  color: var(--red);
+  color: #1e3a5f;
   text-decoration: none;
   padding: 10px 12px;
-  border: 1px dashed var(--red-border);
+  border: 1px dashed #93c5fd;
   border-radius: 8px;
-  background: var(--red-soft);
-  word-break: break-all;
+  background: #eff6ff;
+  word-break: break-word;
 }
 
 .criativo-video-link:hover {
-  background: #ffe4e8;
-  border-color: var(--red);
+  background: #dbeafe;
+  border-color: #60a5fa;
 }
 
 .criativo-media--link .criativo-tag-video {
@@ -947,9 +958,15 @@ a {
 }
 
 .criativo .badge {
-  background: rgba(196, 30, 58, 0.25);
-  border-color: var(--red);
-  color: #fecdd3;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: #57534e;
+  color: #d6d3d1;
+}
+
+.criativo .badge.badge--active {
+  background: rgba(22, 163, 74, 0.22);
+  border-color: #4ade80;
+  color: #bbf7d0;
 }
 
 .campanha-analise h2 {

@@ -21,11 +21,22 @@
   function metricasCampanha(c) {
     const lista = Array.isArray(c.metricas) ? c.metricas : [];
     if (!TelferMetricas?.filtrarEssenciais) return lista;
-    return TelferMetricas.filtrarEssenciais(
-      lista,
-      c.objetivo || c.objective,
-      c.nome || c.name || c.campanha
-    );
+    return TelferMetricas.filtrarEssenciais(lista);
+  }
+
+  function classeBadgeCriativo(status) {
+    const st = String(status || '').toUpperCase();
+    if (st === 'ACTIVE') return 'badge badge--active';
+    return 'badge';
+  }
+
+  function rotuloStatusCriativo(status) {
+    const st = String(status || '').toUpperCase();
+    if (st === 'ACTIVE') return 'Ativo';
+    if (st === 'PAUSED') return 'Pausado';
+    if (st === 'ADSET_PAUSED') return 'Conjunto pausado';
+    if (st === 'CAMPAIGN_PAUSED') return 'Campanha pausada';
+    return status;
   }
 
   function htmlMidiaCriativo(cr) {
@@ -38,7 +49,7 @@
           '<span class="criativo-tag-video">vídeo</span>' +
           '<a class="criativo-video-link" href="' +
           esc(href) +
-          '" target="_blank" rel="noopener noreferrer">Abrir criativo ↗</a>' +
+          '" target="_blank" rel="noopener noreferrer">Ver anúncio em vídeo ↗</a>' +
           '</div>'
         );
       }
@@ -117,10 +128,20 @@
       objEl.textContent = 'Objetivo: todos';
     }
 
-    const campanhas = Array.isArray(data.campanhas) ? data.campanhas : [];
-    if (!campanhas.length) {
+    const campanhasBrutas = Array.isArray(data.campanhas) ? data.campanhas : [];
+    const campanhas = TelferMetricas?.filtrarCampanhasComDados
+      ? TelferMetricas.filtrarCampanhasComDados(campanhasBrutas)
+      : campanhasBrutas.filter((c) => !c?._sem_insights_periodo);
+
+    if (!campanhasBrutas.length) {
       root.innerHTML =
         '<div class="empty">Nenhuma campanha retornada pelo fluxo.</div>';
+      return;
+    }
+
+    if (!campanhas.length) {
+      root.innerHTML =
+        '<div class="empty">Nenhuma campanha com dados nos últimos 7 dias. Gere o relatório na <a href="index.html">página inicial</a>.</div>';
       return;
     }
 
@@ -188,7 +209,14 @@
           html += '<div class="criativo-body">';
           html += '<div class="nome">' + cn + '</div>';
           if (adId) html += '<div class="sub">ID anúncio: ' + esc(adId) + '</div>';
-          if (status) html += '<span class="badge">' + esc(status) + '</span>';
+          if (status) {
+            html +=
+              '<span class="' +
+              classeBadgeCriativo(status) +
+              '">' +
+              esc(rotuloStatusCriativo(status)) +
+              '</span>';
+          }
           html += '</div></div>';
         }
         html += '</div>';

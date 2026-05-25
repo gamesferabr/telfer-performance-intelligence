@@ -179,125 +179,52 @@
     return { data_inicio, data_fim };
   }
 
-  function aplicarLimitesInputsDatas(origem) {
-    const elIni = document.getElementById('dataInicio');
-    const elFim = document.getElementById('dataFim');
-    if (!elIni || !elFim) return { ajustou: false };
-
-    const hoje = hojeIsoLocal();
-    const antesIni = elIni.value;
-    const antesFim = elFim.value;
-
-    elIni.max = hoje;
-    elFim.max = hoje;
-
-    let ini = normalizarDataIso(elIni.value);
-    let fim = normalizarDataIso(elFim.value);
-    if (!ini && !fim) return { ajustou: false };
-
-    const ajustado = ajustarPeriodoMax7(ini || undefined, fim || undefined);
-    ini = ajustado.data_inicio;
-    fim = ajustado.data_fim;
-
-    if (origem === 'inicio') {
-      const maxFim = addDiasIso(ini, PERIODO_MAX_DIAS - 1);
-      elFim.min = ini;
-      elFim.max = maxFim > hoje ? hoje : maxFim;
-      if (fim < ini) fim = ini;
-      if (fim > elFim.max) fim = elFim.max;
-      elIni.min = addDiasIso(fim, -(PERIODO_MAX_DIAS - 1));
-      elIni.max = fim;
-    } else if (origem === 'fim') {
-      const minIni = addDiasIso(fim, -(PERIODO_MAX_DIAS - 1));
-      elIni.min = minIni;
-      elIni.max = fim;
-      if (ini > fim) ini = fim;
-      if (ini < minIni) ini = minIni;
-      const maxFim = addDiasIso(ini, PERIODO_MAX_DIAS - 1);
-      elFim.min = ini;
-      elFim.max = maxFim > hoje ? hoje : maxFim;
-    } else {
-      elIni.min = addDiasIso(fim, -(PERIODO_MAX_DIAS - 1));
-      elIni.max = fim;
-      elFim.min = ini;
-      elFim.max = addDiasIso(ini, PERIODO_MAX_DIAS - 1) > hoje ? hoje : addDiasIso(ini, PERIODO_MAX_DIAS - 1);
-    }
-
-    elIni.value = ini;
-    elFim.value = fim;
-    return { ajustou: antesIni !== ini || antesFim !== fim };
+  /** Últimos 7 dias até hoje (janela fixa da Meta). */
+  function periodoSemanaAtual() {
+    return ajustarPeriodoMax7();
   }
 
-  /** Garante 7 dias nos inputs e persiste filtros corrigidos no storage. */
-  function sincronizarPeriodoDatas(origem) {
-    const r = aplicarLimitesInputsDatas(origem);
-    const elIni = document.getElementById('dataInicio');
-    const elFim = document.getElementById('dataFim');
-    if (!elIni?.value || !elFim?.value) return r;
-
-    const periodo = ajustarPeriodoMax7(elIni.value, elFim.value);
-    if (elIni.value !== periodo.data_inicio) elIni.value = periodo.data_inicio;
-    if (elFim.value !== periodo.data_fim) elFim.value = periodo.data_fim;
-
+  function sincronizarPeriodoDatas() {
+    const periodo = periodoSemanaAtual();
     const filtros = TelferStorage.loadFilters() || {};
     const mudou =
-      filtros.data_inicio !== elIni.value ||
-      filtros.data_fim !== elFim.value ||
-      r.ajustou;
-    if (mudou) {
-      TelferStorage.saveFilters({
-        ...filtros,
-        data_inicio: elIni.value,
-        data_fim: elFim.value,
-        objetivo: filtros.objetivo ?? null,
-      });
-      const rel = TelferStorage.loadDashboard();
-      if (rel) TelferStorage.saveDashboard(rel, filtrosDaTelaSemSync());
-    }
-    return { ...r, ajustou: r.ajustou || mudou };
+      filtros.data_inicio !== periodo.data_inicio ||
+      filtros.data_fim !== periodo.data_fim;
+
+    TelferStorage.saveFilters({
+      ...filtros,
+      data_inicio: periodo.data_inicio,
+      data_fim: periodo.data_fim,
+      objetivo: filtros.objetivo ?? null,
+    });
+
+    const rel = TelferStorage.loadDashboard();
+    if (rel) TelferStorage.saveDashboard(rel, filtrosDaTelaSemSync());
+
+    atualizarPeriodoResumo(periodo);
+    return { ajustou: mudou };
   }
 
   function filtrosDaTelaSemSync() {
+    const periodo = periodoSemanaAtual();
     return {
-      data_inicio: document.getElementById('dataInicio').value || null,
-      data_fim: document.getElementById('dataFim').value || null,
-      objetivo: document.getElementById('objetivoCampanha').value || null,
+      data_inicio: periodo.data_inicio,
+      data_fim: periodo.data_fim,
+      objetivo: document.getElementById('objetivoCampanha')?.value || null,
     };
   }
 
   function validarPeriodoRelatorio() {
     sincronizarPeriodoDatas();
-    const elIni = document.getElementById('dataInicio');
-    const elFim = document.getElementById('dataFim');
-    const ini = elIni.value;
-    const fim = elFim.value;
-    if (!ini || !fim) {
-      return { ok: false, msg: 'Informe data início e data fim.' };
-    }
-    if (!normalizarDataIso(ini) || !normalizarDataIso(fim)) {
-      return { ok: false, msg: 'Datas inválidas. Use o seletor de calendário.' };
-    }
-    if (parseDataLocal(ini) > parseDataLocal(fim)) {
-      return { ok: false, msg: 'Data início não pode ser depois da data fim.' };
-    }
-    if (diasNoPeriodo(ini, fim) > PERIODO_MAX_DIAS) {
-      return {
-        ok: false,
-        msg: `O período pode ter no máximo ${PERIODO_MAX_DIAS} dias.`,
-      };
-    }
-    return { ok: true, data_inicio: ini, data_fim: fim };
+    const periodo = periodoSemanaAtual();
+    return {
+      ok: true,
+      data_inicio: periodo.data_inicio,
+      data_fim: periodo.data_fim,
+    };
   }
 
-  function defaultsDatas() {
-    const hoje = hojeIsoLocal();
-    const ini = addDiasIso(hoje, -(PERIODO_MAX_DIAS - 1));
-    const elIni = document.getElementById('dataInicio');
-    const elFim = document.getElementById('dataFim');
-    if (!elIni.value && !elFim.value) {
-      elIni.value = ini;
-      elFim.value = hoje;
-    }
+  function inicializarPeriodo() {
     sincronizarPeriodoDatas();
   }
 
@@ -329,11 +256,7 @@
         ? c.metricas
         : metricasLegado(c);
     if (TelferMetricas?.filtrarEssenciais) {
-      return TelferMetricas.filtrarEssenciais(
-        brutas,
-        c.objetivo || c.objective,
-        c.nome || c.campanha
-      );
+      return TelferMetricas.filtrarEssenciais(brutas);
     }
     return brutas;
   }
@@ -347,8 +270,14 @@
     if (c.leads != null) legado.push({ nome: 'Leads', valor: c.leads, formato: 'numero' });
     if (c.mensagens != null)
       legado.push({ nome: 'Conversas no WhatsApp', valor: c.mensagens, formato: 'numero' });
-    if (c.ctr != null) legado.push({ nome: 'CTR', valor: c.ctr, formato: 'percentual' });
-    if (c.cpm != null) legado.push({ nome: 'CPM', valor: c.cpm, formato: 'moeda' });
+    const custoMsg = c.custoMensagem ?? c.custo_mensagem;
+    if (custoMsg != null) {
+      legado.push({
+        nome: 'Custo por Conversas no WhatsApp',
+        valor: custoMsg,
+        formato: 'moeda',
+      });
+    }
     return legado;
   }
 
@@ -366,17 +295,12 @@
     return `${d}/${m}/${y}`;
   }
 
-  function atualizarPeriodoResumo() {
+  function atualizarPeriodoResumo(periodo) {
     const el = document.getElementById('periodoResumo');
     if (!el) return;
-    const ini = document.getElementById('dataInicio')?.value;
-    const fim = document.getElementById('dataFim')?.value;
-    if (!ini || !fim) {
-      el.textContent = `Janela de ${PERIODO_MAX_DIAS} dias`;
-      return;
-    }
-    const dias = diasNoPeriodo(ini, fim);
-    el.textContent = `${formatarDataBr(ini)} – ${formatarDataBr(fim)} · ${dias} dia${dias !== 1 ? 's' : ''}`;
+    const p = periodo || periodoSemanaAtual();
+    const dias = diasNoPeriodo(p.data_inicio, p.data_fim);
+    el.textContent = `${formatarDataBr(p.data_inicio)} – ${formatarDataBr(p.data_fim)} · ${dias} dia${dias !== 1 ? 's' : ''} (última semana)`;
   }
 
   function htmlListaMetricas(metricas) {
@@ -685,23 +609,8 @@
 
   function aplicarFiltrosNaTela(filtros) {
     if (!filtros) return false;
-    const elIni = document.getElementById('dataInicio');
-    const elFim = document.getElementById('dataFim');
-    const antes = {
-      ini: normalizarDataIso(filtros.data_inicio),
-      fim: normalizarDataIso(filtros.data_fim),
-    };
-    const ajustado = ajustarPeriodoMax7(filtros.data_inicio, filtros.data_fim);
-    if (ajustado.data_inicio) elIni.value = ajustado.data_inicio;
-    if (ajustado.data_fim) elFim.value = ajustado.data_fim;
     if (filtros.objetivo != null) aplicarObjetivoNoSelect(filtros.objetivo || '');
-    const sync = sincronizarPeriodoDatas();
-    return (
-      sync.ajustou ||
-      antes.ini !== elIni.value ||
-      antes.fim !== elFim.value ||
-      diasNoPeriodo(antes.ini, antes.fim) > PERIODO_MAX_DIAS
-    );
+    return sincronizarPeriodoDatas().ajustou;
   }
 
   function textoResumoObjetivos(json) {
@@ -852,7 +761,7 @@
     }
     if (periodoAjustado) {
       avisos.push(
-        `Período ajustado para no máximo ${PERIODO_MAX_DIAS} dias (salvo no navegador).`
+        `Período atualizado para os últimos ${PERIODO_MAX_DIAS} dias até hoje.`
       );
     }
     if (avisos.length) mostrarAviso(avisos.join(' '));
@@ -899,25 +808,9 @@
     persistirFiltrosNaSessao();
     if (data) renderDashboard();
   });
-  function onAlteracaoData(origem) {
-    sincronizarPeriodoDatas(origem);
-    atualizarPeriodoResumo();
-    persistirFiltrosNaSessao();
-  }
-  const elDataIni = document.getElementById('dataInicio');
-  const elDataFim = document.getElementById('dataFim');
-  elDataIni?.addEventListener('change', () => onAlteracaoData('inicio'));
-  elDataFim?.addEventListener('change', () => onAlteracaoData('fim'));
-  elDataIni?.addEventListener('input', () => onAlteracaoData('inicio'));
-  elDataFim?.addEventListener('input', () => onAlteracaoData('fim'));
-
   document.querySelector('a[href="analise.html"]')?.addEventListener('click', () => {
     if (data?.kpis || data?.campanhas?.length) {
-      salvarRelatorioLocal(data, {
-        data_inicio: document.getElementById('dataInicio').value,
-        data_fim: document.getElementById('dataFim').value,
-        objetivo: document.getElementById('objetivoCampanha').value || null,
-      });
+      salvarRelatorioLocal(data, filtrosDaTelaSemSync());
     }
   });
 
@@ -1091,13 +984,22 @@
     }
   }
 
+  function campanhasComDadosPeriodo(lista) {
+    const brutas = Array.isArray(lista) ? lista : [];
+    if (TelferMetricas?.filtrarCampanhasComDados) {
+      return TelferMetricas.filtrarCampanhasComDados(brutas);
+    }
+    return brutas.filter((c) => !c?._sem_insights_periodo);
+  }
+
   function renderDashboard() {
     if (!data) return;
 
-    const campanhas = Array.isArray(data.campanhas) ? data.campanhas : [];
+    const campanhasBrutas = Array.isArray(data.campanhas) ? data.campanhas : [];
+    const campanhas = campanhasComDadosPeriodo(campanhasBrutas);
     const kpis = data.kpis || {};
 
-    if (!campanhas.length) {
+    if (!campanhasBrutas.length) {
       const resumoDireto = kpis.metricas_resumo;
       if (Array.isArray(resumoDireto) && resumoDireto.length) {
         const kpisGrid = document.getElementById('kpisGrid');
@@ -1120,6 +1022,19 @@
       return;
     }
 
+    if (!campanhas.length) {
+      atualizarPeriodoResumo();
+      document.getElementById('kpisGrid').innerHTML =
+        '<div class="card card-kpi"><div class="card-title">Sem dados no período</div><div class="card-value">—</div></div>';
+      document.getElementById('campanhasContainer').innerHTML =
+        '<p class="text-muted">Nenhuma campanha com dados nos últimos 7 dias.</p>';
+      const insightsList = document.getElementById('insightsList');
+      if (insightsList) insightsList.innerHTML = '';
+      const recommendationsList = document.getElementById('recommendationsList');
+      if (recommendationsList) recommendationsList.innerHTML = '';
+      return;
+    }
+
     function agregarResumo() {
       const map = new Map();
       for (const c of campanhas) {
@@ -1134,9 +1049,8 @@
         ...m,
         valor: m.formato === 'moeda' ? Number(m.valor.toFixed(2)) : m.valor,
       }));
-      const objetivoFiltro = lerObjetivoSelecionado();
       if (TelferMetricas?.filtrarEssenciaisResumo) {
-        return TelferMetricas.filtrarEssenciaisResumo(somado, objetivoFiltro, campanhas);
+        return TelferMetricas.filtrarEssenciaisResumo(somado);
       }
       return somado;
     }
@@ -1222,8 +1136,7 @@
 
   }
 
-  defaultsDatas();
-  atualizarPeriodoResumo();
+  inicializarPeriodo();
 
   (async function init() {
     const tinhaRelatorio = restaurarRelatorioSalvo();
@@ -1240,12 +1153,7 @@
         );
       }
     } else if (!tinhaRelatorio) {
-      const periodoAjustado = aplicarFiltrosNaTela(TelferStorage.loadFilters());
-      if (periodoAjustado) {
-        mostrarAviso(
-          `Período ajustado para no máximo ${PERIODO_MAX_DIAS} dias (máximo permitido).`
-        );
-      }
+      aplicarFiltrosNaTela(TelferStorage.loadFilters());
     }
 
     sincronizarPeriodoDatas();
