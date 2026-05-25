@@ -164,7 +164,7 @@ a {
 .toolbar-compact {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-end;
   gap: 12px 16px;
   padding: 12px 20px 14px;
   background: var(--bg);
@@ -200,7 +200,7 @@ a {
 .toolbar-actions {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-end;
   gap: 8px;
 }
 
@@ -232,13 +232,18 @@ a {
 }
 
 .btn--compact {
-  padding: 8px 16px;
-  font-size: 0.82rem;
+  padding: 7px 16px;
+  font-size: 0.85rem;
+  line-height: 1.25;
+  min-height: 34px;
+  box-sizing: border-box;
 }
 
 .btn-icon--compact {
   padding: 7px 10px;
   min-width: 36px;
+  min-height: 34px;
+  box-sizing: border-box;
 }
 
 .meta--inline {
