@@ -613,27 +613,6 @@
     return sincronizarPeriodoDatas().ajustou;
   }
 
-  function textoResumoObjetivos(json) {
-    const nCamp = json.total_campanhas_ativas ?? null;
-    const nObj = json.objetivos?.length ?? json.total_objetivos_distintos ?? 0;
-    const quando = json.atualizado_em
-      ? new Date(json.atualizado_em).toLocaleString('pt-BR')
-      : 'agora';
-    let msg = '';
-    if (nCamp != null) {
-      msg = `${nCamp} campanha${nCamp !== 1 ? 's' : ''} ativa${nCamp !== 1 ? 's' : ''} · ${nObj} objetivo${nObj !== 1 ? 's' : ''} distinto${nObj !== 1 ? 's' : ''} no filtro`;
-      if (nCamp > nObj) {
-        msg += ' (várias campanhas podem compartilhar o mesmo objetivo)';
-      }
-    } else {
-      msg = `${nObj} objetivo(s) distinto(s)`;
-    }
-    if (json.campanhas_sem_objetivo > 0) {
-      msg += ` · ${json.campanhas_sem_objetivo} ativa(s) sem campo objective na Meta`;
-    }
-    return `${msg} · ${quando}`;
-  }
-
   function preencherSelectObjetivos(lista, valorPreferido) {
     const preferido =
       valorPreferido !== undefined && valorPreferido !== null
@@ -690,14 +669,43 @@
     });
   }
 
-  function atualizarMetaObjetivos(texto) {
-    document.getElementById('objetivosMeta').textContent = texto || '';
+  function relatorioSalvoDisponivel() {
+    const salvo = TelferStorage.loadDashboard();
+    return temDadosRelatorio(resolverRelatorio(salvo));
+  }
+
+  function atualizarBotaoUltimoRelatorio() {
+    const btn = document.getElementById('verUltimoRelatorioBtn');
+    if (!btn) return;
+    if (relatorioSalvoDisponivel() && data == null) {
+      btn.classList.remove('is-hidden');
+      const quando = TelferStorage.loadSavedAt();
+      btn.title = quando
+        ? `Último relatório salvo em ${new Date(quando).toLocaleString('pt-BR')}`
+        : 'Carregar o último relatório salvo neste navegador';
+    } else {
+      btn.classList.add('is-hidden');
+    }
+  }
+
+  function carregarUltimoRelatorio() {
+    const salvo = TelferStorage.loadDashboard();
+    const normalizado = resolverRelatorio(salvo);
+    if (!temDadosRelatorio(normalizado)) {
+      atualizarBotaoUltimoRelatorio();
+      return false;
+    }
+
+    data = normalizado;
+    aplicarFiltrosNaTela(TelferStorage.loadFilters());
+    mostrarAviso('');
+    renderDashboard();
+    atualizarBotaoUltimoRelatorio();
+    return true;
   }
 
   async function carregarObjetivosMeta(silencioso) {
     if (silencioso && relatorioEmAndamento) return;
-
-    if (!silencioso) atualizarMetaObjetivos('Atualizando objetivos na Meta…');
 
     try {
       const ctrlObj = new AbortController();
@@ -717,7 +725,6 @@
       if (json.tipo === 'objetivos' && Array.isArray(json.objetivos)) {
         TelferStorage.saveObjectives(json);
         preencherSelectObjetivos(json.objetivos, lerObjetivoSelecionado());
-        atualizarMetaObjetivos(textoResumoObjetivos(json));
         return;
       }
       throw new Error('Resposta inesperada ao listar objetivos');
@@ -725,49 +732,16 @@
       const cache = TelferStorage.loadObjectives();
       if (cache?.objetivos?.length) {
         preencherSelectObjetivos(cache.objetivos, lerObjetivoSelecionado());
-        atualizarMetaObjetivos('Objetivos do cache (falha ao consultar Meta agora)');
         return;
       }
       const rel = TelferStorage.loadDashboard();
       const fallback = objetivosFromRelatorio(rel);
       if (fallback.length) {
         preencherSelectObjetivos(fallback, lerObjetivoSelecionado());
-        atualizarMetaObjetivos('Objetivos do último relatório salvo');
         return;
       }
-      atualizarMetaObjetivos(
-        'Não foi possível carregar objetivos. Reimporte o fluxo n8n atualizado.'
-      );
       console.warn(e);
     }
-  }
-
-  function restaurarRelatorioSalvo() {
-    const salvo = TelferStorage.loadDashboard();
-    const normalizado = resolverRelatorio(salvo);
-    if (!temDadosRelatorio(normalizado)) return false;
-
-    data = normalizado;
-    const periodoAjustado = aplicarFiltrosNaTela(TelferStorage.loadFilters());
-
-    const avisos = [];
-    const quando = TelferStorage.loadSavedAt();
-    if (quando) {
-      avisos.push(
-        'Relatório restaurado (salvo em ' +
-          new Date(quando).toLocaleString('pt-BR') +
-          '). Gere novamente para atualizar métricas.'
-      );
-    }
-    if (periodoAjustado) {
-      avisos.push(
-        `Período atualizado para os últimos ${PERIODO_MAX_DIAS} dias até hoje.`
-      );
-    }
-    if (avisos.length) mostrarAviso(avisos.join(' '));
-
-    renderDashboard();
-    return true;
   }
 
   function setLoading(ativo, texto) {
@@ -796,9 +770,15 @@
   }
 
   const generateBtn = document.getElementById('generateBtn');
+  const verUltimoRelatorioBtn = document.getElementById('verUltimoRelatorioBtn');
   const refreshObjetivosBtn = document.getElementById('refreshObjetivosBtn');
 
   generateBtn.addEventListener('click', gerarRelatorio);
+  verUltimoRelatorioBtn.addEventListener('click', () => {
+    if (!carregarUltimoRelatorio()) {
+      alert('Não há relatório salvo neste navegador. Use "gerar relatório".');
+    }
+  });
   refreshObjetivosBtn.addEventListener('click', () => carregarObjetivosMeta(false));
 
   document.getElementById('objetivoCampanha')?.addEventListener('change', () => {
@@ -964,6 +944,7 @@
       aplicarObjetivoNoSelect(objetivo);
 
       renderDashboard();
+      atualizarBotaoUltimoRelatorio();
       console.log('[Telfer] Painel montado:', data.campanhas?.length, 'campanhas');
 
     } catch (error) {
@@ -1133,26 +1114,18 @@
   inicializarPeriodo();
 
   (async function init() {
-    const tinhaRelatorio = restaurarRelatorioSalvo();
+    aplicarFiltrosNaTela(TelferStorage.loadFilters());
+    atualizarBotaoUltimoRelatorio();
 
     const cacheObj = TelferStorage.loadObjectives();
     if (cacheObj?.objetivos?.length) {
       preencherSelectObjetivos(cacheObj.objetivos, lerObjetivoSelecionado());
-      const quando = cacheObj.cached_at || cacheObj.atualizado_em;
-      if (quando) {
-        atualizarMetaObjetivos(
-          'Cache · ' +
-            new Date(quando).toLocaleString('pt-BR') +
-            ' (↻ Meta para atualizar)'
-        );
-      }
-    } else if (!tinhaRelatorio) {
-      aplicarFiltrosNaTela(TelferStorage.loadFilters());
     }
 
     sincronizarPeriodoDatas();
 
     await carregarObjetivosMeta(true);
+    atualizarBotaoUltimoRelatorio();
     aplicarObjetivoNoSelect(TelferStorage.loadFilters()?.objetivo ?? lerObjetivoSelecionado());
     sincronizarPeriodoDatas();
     setInterval(() => carregarObjetivosMeta(true), OBJETIVOS_POLL_MS);
