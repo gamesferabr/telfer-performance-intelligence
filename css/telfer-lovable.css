@@ -103,51 +103,41 @@ a {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 12px 20px;
+  padding: 14px 20px;
   max-width: var(--container-max);
   margin: 0 auto;
-  min-height: 60px;
+  min-height: 64px;
 }
 
 .brand-lockup {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 12px;
   min-width: 0;
+  text-decoration: none;
 }
 
-.brand-mark {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius);
-  background: var(--brand);
-  color: #fff;
-  display: grid;
-  place-items: center;
-  font-weight: 700;
-  font-size: 16px;
-  letter-spacing: -0.02em;
+.brand-logo {
+  height: 34px;
+  width: auto;
+  display: block;
   flex-shrink: 0;
-  box-shadow: 0 1px 2px rgba(196, 30, 58, 0.25);
+  object-fit: contain;
 }
 
-.brand-copy {
-  min-width: 0;
-}
-
-.brand-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--ink);
-  letter-spacing: -0.01em;
-  line-height: 1.2;
+.brand-divider {
+  width: 1px;
+  height: 22px;
+  background: var(--border);
+  flex-shrink: 0;
 }
 
 .brand-role {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
-  font-weight: 400;
-  margin-top: 1px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
 }
 
 .header-top-end {
@@ -244,6 +234,18 @@ a {
   background: var(--brand);
   color: #fff;
   border-color: var(--brand);
+}
+
+.chip--disabled,
+.chip:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: var(--bg-muted);
+}
+
+.chip--disabled:hover,
+.chip:disabled:hover {
+  background: var(--bg-muted);
 }
 
 .chip-refresh {
@@ -408,6 +410,55 @@ a {
   color: var(--brand-dark);
   border: 1px solid var(--brand-soft-border);
   font-variant-numeric: tabular-nums;
+}
+
+/* Hint discreto que aparece sob a toolbar enquanto processa */
+.loading-hint {
+  display: block;
+  padding: 4px 20px 0;
+  max-width: var(--container-max);
+  margin: 0 auto;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.loading-hint::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--brand);
+  vertical-align: middle;
+  animation: telfer-blink 1.2s ease-in-out infinite;
+}
+
+@keyframes telfer-blink {
+  0%, 100% { opacity: 0.25; }
+  50%      { opacity: 1; }
+}
+
+/* Spinner inline no botão "gerar relatório" */
+.btn-spinner {
+  display: none;
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: telfer-spin 0.7s linear infinite;
+}
+
+.btn:disabled .btn-spinner {
+  display: inline-block;
+}
+
+@keyframes telfer-spin {
+  to { transform: rotate(360deg); }
 }
 
 .alert {
@@ -785,12 +836,23 @@ a {
 /* —— Footer —— */
 
 .footer {
-  padding: 20px 20px 28px;
-  text-align: center;
+  padding: 28px 20px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
   font-size: 11px;
   color: var(--muted);
   max-width: var(--container-max);
   margin: 0 auto;
+  border-top: 1px solid var(--border);
+  margin-top: 16px;
+}
+
+.footer-logo {
+  height: 26px;
+  width: auto;
+  opacity: 0.85;
 }
 
 .footer span {
@@ -839,7 +901,20 @@ a {
 @media (max-width: 640px) {
   .header-top {
     padding: 10px 16px;
-    min-height: 56px;
+    min-height: 58px;
+    gap: 10px;
+  }
+
+  .brand-logo {
+    height: 28px;
+  }
+
+  .brand-divider {
+    height: 18px;
+  }
+
+  .brand-role {
+    font-size: 11px;
   }
 
   .client-block,
@@ -860,5 +935,17 @@ a {
 
   .kpi-value {
     font-size: 17px;
+  }
+
+  .loading-hint {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+@media (max-width: 420px) {
+  .brand-divider,
+  .brand-role {
+    display: none;
   }
 }

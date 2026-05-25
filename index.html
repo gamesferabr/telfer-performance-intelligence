@@ -7,19 +7,23 @@
   <link rel="icon" type="image/png" href="LOGO_V2-PRETOEVERMELHO.png" sizes="32x32" />
   <link rel="apple-touch-icon" href="LOGO_V2-PRETOEVERMELHO.png" />
   <meta name="theme-color" content="#c41e3a" />
-  <link rel="stylesheet" href="css/telfer-lovable.css?v=1" />
+  <link rel="stylesheet" href="css/telfer-lovable.css?v=2" />
 </head>
 <body>
   <div class="page">
     <header class="app-header">
       <div class="header-top">
-        <div class="brand-lockup">
-          <div class="brand-mark" aria-hidden="true">T</div>
-          <div class="brand-copy">
-            <div class="brand-name">Telfer Company</div>
-            <div class="brand-role">Painel do Cliente</div>
-          </div>
-        </div>
+        <a href="index.html" class="brand-lockup" aria-label="Telfer Company — Painel do Cliente">
+          <img
+            class="brand-logo"
+            src="logo - horizontal - vermelho e preto.png"
+            alt="Telfer Company"
+            width="220"
+            height="40"
+          />
+          <span class="brand-divider" aria-hidden="true"></span>
+          <span class="brand-role">Painel do Cliente</span>
+        </a>
         <div class="header-top-end"></div>
       </div>
     </header>
@@ -36,9 +40,15 @@
           type="button"
           class="chip chip--active"
           data-objetivo=""
+          data-familia="todas"
           role="tab"
           aria-selected="true"
         >todas</button>
+        <button type="button" class="chip" data-familia="mensagens" role="tab" aria-selected="false">whatsapp</button>
+        <button type="button" class="chip" data-familia="trafego" role="tab" aria-selected="false">tráfego</button>
+        <button type="button" class="chip" data-familia="visibilidade" role="tab" aria-selected="false">visibilidade</button>
+        <button type="button" class="chip" data-familia="leads" role="tab" aria-selected="false">leads</button>
+        <button type="button" class="chip" data-familia="vendas" role="tab" aria-selected="false">vendas</button>
       </div>
       <div class="select-objetivo-wrapper">
         <label class="field">
@@ -77,10 +87,13 @@
         id="voltarPainelBtn"
         class="btn btn-ghost is-hidden"
       >voltar</button>
-      <button type="button" id="generateBtn" class="btn btn-primary">gerar relatório</button>
+      <button type="button" id="generateBtn" class="btn btn-primary">
+        <span class="btn-label">gerar relatório</span>
+        <span class="btn-spinner" aria-hidden="true"></span>
+      </button>
     </div>
 
-    <output id="loading" class="toolbar-feedback status-pill is-hidden">processando…</output>
+    <output id="loading" class="toolbar-feedback loading-hint is-hidden">processando…</output>
     <output id="alertBanner" class="toolbar-feedback alert is-hidden"></output>
 
     <main class="content">
@@ -132,6 +145,13 @@
     </main>
 
     <footer class="footer">
+      <img
+        class="footer-logo"
+        src="logo - horizontal - vermelho e preto.png"
+        alt="Telfer Company"
+        width="160"
+        height="28"
+      />
       <span>painel by Telfer Company · telfer performance intelligence © 2026</span>
     </footer>
   </div>
@@ -140,6 +160,6 @@
   <script src="js/runtime-config.js"></script>
   <script src="js/telfer-metricas.js?v=3"></script>
   <script src="js/index.js?v=6"></script>
-  <script src="js/chips-objetivo.js?v=1"></script>
+  <script src="js/chips-objetivo.js?v=2"></script>
 </body>
 </html>
