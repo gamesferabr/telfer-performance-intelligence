@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="LOGO_V2-PRETOEVERMELHO.png" sizes="32x32" />
   <link rel="apple-touch-icon" href="LOGO_V2-PRETOEVERMELHO.png" />
   <meta name="theme-color" content="#c41e3a" />
-  <link rel="stylesheet" href="css/telfer.css?v=4" />
+  <link rel="stylesheet" href="css/telfer.css?v=5" />
 </head>
 <body>
   <div class="page">
@@ -32,37 +32,38 @@
       </div>
 
       <div class="toolbar-compact">
-        <p id="periodoResumo" class="periodo-chip" aria-live="polite"></p>
-        <div class="toolbar-fields">
-          <label class="field field--grow">
-            <span class="field-label">objetivo</span>
-            <div class="field-inline">
-              <select id="objetivoCampanha" class="select select--compact">
-                <option value="">Todos</option>
-              </select>
-              <button
-                type="button"
-                id="refreshObjetivosBtn"
-                class="btn btn-icon btn-icon--compact"
-                title="Buscar objetivos ativos na Meta"
-                aria-label="Atualizar objetivos na Meta"
-              >
-                ↻
-              </button>
-            </div>
-          </label>
+        <div class="toolbar-row">
+          <p id="periodoResumo" class="periodo-chip" aria-live="polite"></p>
+          <div class="toolbar-fields">
+            <label class="field field--grow">
+              <span class="field-label">objetivo</span>
+              <div class="field-inline">
+                <select id="objetivoCampanha" class="select select--compact">
+                  <option value="">Todos</option>
+                </select>
+                <button
+                  type="button"
+                  id="refreshObjetivosBtn"
+                  class="btn btn-icon btn-icon--compact"
+                  title="Buscar objetivos ativos na Meta"
+                  aria-label="Atualizar objetivos na Meta"
+                >
+                  ↻
+                </button>
+              </div>
+            </label>
+          </div>
+          <div class="toolbar-actions">
+            <button type="button" id="generateBtn" class="btn btn-primary btn--compact">
+              gerar relatório
+            </button>
+          </div>
         </div>
-        <div class="toolbar-actions">
-          <button type="button" id="generateBtn" class="btn btn-primary btn--compact">
-            gerar relatório
-          </button>
-          <span id="loading" class="status-pill is-hidden">processando…</span>
-        </div>
+        <p id="loading" class="toolbar-feedback status-pill is-hidden" role="status">processando…</p>
+        <div id="alertBanner" class="toolbar-feedback alert is-hidden" role="status"></div>
         <p id="objetivosMeta" class="toolbar-meta"></p>
       </div>
     </header>
-
-    <div id="alertBanner" class="alert is-hidden" role="status"></div>
 
     <section class="section-block">
       <div class="section-head">
