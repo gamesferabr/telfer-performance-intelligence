@@ -1115,7 +1115,6 @@
 
   (async function init() {
     aplicarFiltrosNaTela(TelferStorage.loadFilters());
-    atualizarBotaoUltimoRelatorio();
 
     const cacheObj = TelferStorage.loadObjectives();
     if (cacheObj?.objetivos?.length) {
@@ -1123,6 +1122,9 @@
     }
 
     sincronizarPeriodoDatas();
+
+    carregarUltimoRelatorio();
+    atualizarBotaoUltimoRelatorio();
 
     await carregarObjetivosMeta(true);
     atualizarBotaoUltimoRelatorio();

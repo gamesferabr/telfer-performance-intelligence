@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="LOGO_V2-PRETOEVERMELHO.png" sizes="32x32" />
   <link rel="apple-touch-icon" href="LOGO_V2-PRETOEVERMELHO.png" />
   <meta name="theme-color" content="#c41e3a" />
-  <link rel="stylesheet" href="css/telfer-lovable.css?v=2" />
+  <link rel="stylesheet" href="css/telfer-lovable.css?v=3" />
 </head>
 <body>
   <div class="page">
@@ -40,15 +40,10 @@
           type="button"
           class="chip chip--active"
           data-objetivo=""
-          data-familia="todas"
           role="tab"
           aria-selected="true"
         >todas</button>
-        <button type="button" class="chip" data-familia="mensagens" role="tab" aria-selected="false">whatsapp</button>
-        <button type="button" class="chip" data-familia="trafego" role="tab" aria-selected="false">tráfego</button>
-        <button type="button" class="chip" data-familia="visibilidade" role="tab" aria-selected="false">visibilidade</button>
-        <button type="button" class="chip" data-familia="leads" role="tab" aria-selected="false">leads</button>
-        <button type="button" class="chip" data-familia="vendas" role="tab" aria-selected="false">vendas</button>
+        <span id="chipsLoading" class="chips-loading" aria-hidden="true">carregando objetivos…</span>
       </div>
       <div class="select-objetivo-wrapper">
         <label class="field">
@@ -159,7 +154,7 @@
   <script src="telfer-storage.js"></script>
   <script src="js/runtime-config.js"></script>
   <script src="js/telfer-metricas.js?v=3"></script>
-  <script src="js/index.js?v=6"></script>
-  <script src="js/chips-objetivo.js?v=2"></script>
+  <script src="js/index.js?v=7"></script>
+  <script src="js/chips-objetivo.js?v=3"></script>
 </body>
 </html>

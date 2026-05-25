@@ -1,9 +1,6 @@
 /**
- * Chips de objetivo — espelham o <select id="objetivoCampanha">.
- * Suporta:
- *   - chips estáticos por "família" (data-familia): whatsapp, tráfego, leads, vendas, visibilidade
- *   - chips dinâmicos (data-objetivo) gerados a partir dos objetivos retornados pela Meta
- * Mantém o select original como fonte de verdade para a lógica do painel.
+ * Chips de objetivo — 100% dinâmicos a partir das options do <select id="objetivoCampanha">.
+ * Não há famílias hardcoded; o select é a única fonte de verdade.
  */
 (function () {
   const select = document.getElementById('objetivoCampanha');
@@ -11,96 +8,67 @@
   if (!select || !chipsContainer) return;
 
   const TODAS_LABEL = 'todas';
-  const FAMILIA_DEFAULT_VALUE = {
-    mensagens: 'OUTCOME_ENGAGEMENT',
-    visibilidade: 'OUTCOME_AWARENESS',
-    trafego: 'OUTCOME_TRAFFIC',
-    leads: 'OUTCOME_LEADS',
-    vendas: 'OUTCOME_SALES',
-  };
+  const chipsLoading = document.getElementById('chipsLoading');
 
-  const chipsEstaticos = [...chipsContainer.querySelectorAll('.chip[data-familia]')];
-
-  function rotuloChip(rawLabel, rawValue) {
-    const tentativa = window.TelferMetricas?.rotuloObjetivo?.(rawValue, '') || rawLabel || rawValue || '';
+  function rotuloChip(option) {
+    const value = option.value;
+    const tentativa =
+      window.TelferMetricas?.rotuloObjetivo?.(value, '') ||
+      option.textContent ||
+      value ||
+      '';
     return String(tentativa)
       .toLowerCase()
       .replace(/\s+\(\d+\s+campanha[s]?\)/g, '')
+      .replace(/\s+\(filtro\s+atual\)/g, '')
       .trim();
   }
 
-  function familiaDoValor(value) {
-    if (!value) return 'todas';
-    if (!window.TelferMetricas?.familiaPorObjetivo) return null;
-    return window.TelferMetricas.familiaPorObjetivo(value, '');
-  }
+  function reconstruirChips() {
+    const valorAnterior = select.value || '';
 
-  function valorDaFamilia(familia) {
-    if (familia === 'todas') return '';
-    for (const option of select.options) {
-      const v = option.value;
-      if (!v) continue;
-      if (familiaDoValor(v) === familia) return v;
-    }
-    return FAMILIA_DEFAULT_VALUE[familia] || '';
-  }
+    chipsContainer.querySelectorAll('.chip').forEach((el) => el.remove());
 
-  function reconstruirChipsDinamicos() {
-    const dinamicos = chipsContainer.querySelectorAll('.chip[data-objetivo][data-dynamic="1"]');
-    dinamicos.forEach((el) => el.remove());
-
-    const familiasEstaticas = new Set(chipsEstaticos.map((c) => c.dataset.familia));
-    const seenLabels = new Set(chipsEstaticos.map((c) => c.textContent.trim().toLowerCase()));
     const fragment = document.createDocumentFragment();
+    fragment.appendChild(criarChip('', TODAS_LABEL));
 
+    const seenLabels = new Set([TODAS_LABEL]);
     for (const option of select.options) {
       const value = option.value;
       if (!value) continue;
-      const familia = familiaDoValor(value);
-      if (familia && familiasEstaticas.has(familia)) continue;
-      const rotulo = rotuloChip(option.textContent, value);
+      const rotulo = rotuloChip(option);
       if (!rotulo || seenLabels.has(rotulo)) continue;
       seenLabels.add(rotulo);
-      fragment.appendChild(criarChipDinamico(value, rotulo));
+      fragment.appendChild(criarChip(value, rotulo));
     }
 
-    chipsContainer.appendChild(fragment);
+    if (chipsLoading) {
+      chipsContainer.insertBefore(fragment, chipsLoading);
+      chipsLoading.classList.toggle('is-hidden', seenLabels.size > 1);
+    } else {
+      chipsContainer.appendChild(fragment);
+    }
+
+    select.value = valorAnterior;
     sincronizarEstadoAtivo();
-    atualizarDisponibilidadeEstaticos();
   }
 
-  function criarChipDinamico(value, rotulo) {
+  function criarChip(value, rotulo) {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'chip';
     btn.dataset.objetivo = value;
-    btn.dataset.dynamic = '1';
     btn.textContent = rotulo;
     btn.setAttribute('role', 'tab');
-    btn.addEventListener('click', () => aplicarValorObjetivo(value));
+    btn.addEventListener('click', () => aplicarObjetivo(value));
     return btn;
   }
 
-  function configurarChipEstatico(chip) {
-    chip.addEventListener('click', () => {
-      const familia = chip.dataset.familia;
-      const value = valorDaFamilia(familia);
-      aplicarValorObjetivo(value);
-    });
-  }
-
-  function aplicarValorObjetivo(value) {
+  function aplicarObjetivo(value) {
     const normalizado = value || '';
     if (select.value === normalizado) {
       sincronizarEstadoAtivo();
       return;
-    }
-    if (normalizado && ![...select.options].some((o) => o.value === normalizado)) {
-      const opt = document.createElement('option');
-      opt.value = normalizado;
-      opt.textContent = rotuloChip('', normalizado) || normalizado;
-      opt.dataset.chipFallback = '1';
-      select.appendChild(opt);
     }
     select.value = normalizado;
     select.dispatchEvent(new Event('change', { bubbles: true }));
@@ -108,52 +76,20 @@
   }
 
   function sincronizarEstadoAtivo() {
-    const valorAtivo = select.value || '';
-    const familiaAtiva = familiaDoValor(valorAtivo);
-
+    const ativo = select.value || '';
     for (const chip of chipsContainer.querySelectorAll('.chip')) {
-      let match = false;
-      if (chip.dataset.familia) {
-        match = (chip.dataset.familia === 'todas' && !valorAtivo) ||
-                (chip.dataset.familia === familiaAtiva);
-      } else if (chip.dataset.objetivo != null) {
-        match = chip.dataset.objetivo === valorAtivo;
-      }
+      const match = (chip.dataset.objetivo || '') === ativo;
       chip.classList.toggle('chip--active', match);
       chip.setAttribute('aria-selected', match ? 'true' : 'false');
     }
   }
 
-  function atualizarDisponibilidadeEstaticos() {
-    if (!select.options.length) return;
-    const familiasComOpcao = new Set();
-    let temOpcoes = false;
-    for (const option of select.options) {
-      if (!option.value) continue;
-      temOpcoes = true;
-      const f = familiaDoValor(option.value);
-      if (f) familiasComOpcao.add(f);
-    }
-    if (!temOpcoes) return;
-
-    for (const chip of chipsEstaticos) {
-      if (chip.dataset.familia === 'todas') continue;
-      const ativo = familiasComOpcao.has(chip.dataset.familia);
-      chip.classList.toggle('chip--disabled', !ativo);
-      chip.disabled = !ativo;
-      chip.title = ativo ? '' : 'Sem campanhas com esse objetivo no período';
-    }
-  }
-
-  for (const chip of chipsEstaticos) configurarChipEstatico(chip);
-
   select.addEventListener('change', sincronizarEstadoAtivo);
 
-  const observer = new MutationObserver(reconstruirChipsDinamicos);
+  const observer = new MutationObserver(reconstruirChips);
   observer.observe(select, { childList: true, subtree: false });
 
-  reconstruirChipsDinamicos();
-  sincronizarEstadoAtivo();
+  reconstruirChips();
 
   inicializarPlaceholdersIa();
   inicializarTabAnaliseIa();

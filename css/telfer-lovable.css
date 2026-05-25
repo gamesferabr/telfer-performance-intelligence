@@ -236,16 +236,17 @@ a {
   border-color: var(--brand);
 }
 
-.chip--disabled,
-.chip:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  background: var(--bg-muted);
+.chips-loading {
+  align-self: center;
+  font-size: 11px;
+  color: var(--muted);
+  font-style: italic;
+  padding: 0 4px;
+  white-space: nowrap;
 }
 
-.chip--disabled:hover,
-.chip:disabled:hover {
-  background: var(--bg-muted);
+.chips-loading.is-hidden {
+  display: none;
 }
 
 .chip-refresh {
