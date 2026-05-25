@@ -256,7 +256,7 @@
         ? c.metricas
         : metricasLegado(c);
     if (TelferMetricas?.filtrarEssenciais) {
-      return TelferMetricas.filtrarEssenciais(brutas);
+      return TelferMetricas.filtrarEssenciais(brutas, c);
     }
     return brutas;
   }
@@ -1036,6 +1036,10 @@
     }
 
     function agregarResumo() {
+      if (TelferMetricas?.agregarEssenciaisDasCampanhas) {
+        return TelferMetricas.agregarEssenciaisDasCampanhas(campanhas);
+      }
+
       const map = new Map();
       for (const c of campanhas) {
         for (const m of metricasDaCampanha(c)) {
@@ -1045,14 +1049,10 @@
           map.get(m.nome).valor += Number(m.valor) || 0;
         }
       }
-      const somado = [...map.values()].map((m) => ({
-        ...m,
-        valor: m.formato === 'moeda' ? Number(m.valor.toFixed(2)) : m.valor,
+      return [...map.values()].map((item) => ({
+        ...item,
+        valor: item.formato === 'moeda' ? Number(item.valor.toFixed(2)) : item.valor,
       }));
-      if (TelferMetricas?.filtrarEssenciaisResumo) {
-        return TelferMetricas.filtrarEssenciaisResumo(somado);
-      }
-      return somado;
     }
 
     const resumo = agregarResumo();

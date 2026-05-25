@@ -133,9 +133,21 @@
     const n = String(nomeMetrica || '').trim();
     const e = String(nomeEssencial || '').trim();
     if (n === e) return true;
-    if (normalizar(n) === normalizar(e)) return true;
+    const nNorm = normalizar(n);
+    const eNorm = normalizar(e);
+    if (nNorm === eNorm) return true;
     const eLow = e.toLowerCase();
     const nLow = n.toLowerCase();
+    if (eNorm.includes('pessoas') && eNorm.includes('alcanc')) {
+      if (
+        nNorm.includes('alcanc') ||
+        nNorm === 'reach' ||
+        nNorm.includes('reach') ||
+        (nNorm.includes('pessoas') && nNorm.includes('alcanc'))
+      ) {
+        return true;
+      }
+    }
     if (eLow === 'custo por conversa') {
       return nLow.startsWith('custo por') && (nLow.includes('conversa') || nLow.includes('whatsapp'));
     }
@@ -146,38 +158,126 @@
     return false;
   }
 
+  function parseValorMetrica(v) {
+    if (v == null || v === '') return 0;
+    if (typeof v === 'number' && Number.isFinite(v)) return v;
+    const s = String(v).trim().replace(/\s/g, '');
+    if (!s) return 0;
+    if (/^\d{1,3}(\.\d{3})+$/.test(s)) {
+      return Number(s.replace(/\./g, '')) || 0;
+    }
+    if (s.includes(',')) {
+      return Number(s.replace(/\./g, '').replace(',', '.')) || 0;
+    }
+    const n = Number(s);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function valorLegadoPorBusca(c, busca) {
+    if (!c || typeof c !== 'object') return 0;
+    const b = normalizar(busca);
+    if (b.includes('valor') && b.includes('invest')) return parseValorMetrica(c.spend);
+    if (b.includes('pessoas') && b.includes('alcanc')) return parseValorMetrica(c.reach);
+    if (b.includes('conversas') && b.includes('whatsapp')) {
+      return parseValorMetrica(c.mensagens);
+    }
+    if (b.includes('custo') && b.includes('conversa')) {
+      return parseValorMetrica(c.custoMensagem ?? c.custo_mensagem);
+    }
+    return 0;
+  }
+
+  function valorMaxListaEssencial(lista, busca) {
+    let max = 0;
+    let formatoHit = null;
+    for (const m of lista) {
+      if (!m?.nome || !nomeMetricaCombina(m.nome, busca)) continue;
+      const v = parseValorMetrica(m.valor);
+      if (v > max) {
+        max = v;
+        formatoHit = m.formato || formatoHit;
+      }
+    }
+    return { valor: max, formato: formatoHit };
+  }
+
+  function valorEssencialDeCampanha(c, busca) {
+    const lista = Array.isArray(c?.metricas) ? c.metricas : [];
+    const { valor, formato } = valorMaxListaEssencial(lista, busca);
+    if (valor > 0) return { valor, formato: formato || formatoPadraoMetrica(busca) };
+    const legado = valorLegadoPorBusca(c, busca);
+    if (legado > 0) {
+      return { valor: legado, formato: formatoPadraoMetrica(busca) };
+    }
+    return { valor: 0, formato: formato || formatoPadraoMetrica(busca) };
+  }
+
   function formatoPadraoMetrica(busca) {
     if (busca === 'Valor investido' || busca.startsWith('Custo por')) return 'moeda';
     return 'numero';
   }
 
-  function filtrarEssenciais(metricas) {
+  function filtrarEssenciais(metricas, campanha) {
     const lista = Array.isArray(metricas) ? metricas : [];
     const out = [];
 
     for (const { busca, rotulo } of METRICAS_EXIBICAO_PAINEL) {
-      const hit = lista.find((m) => m?.nome && nomeMetricaCombina(m.nome, busca));
+      const { valor, formato } = campanha
+        ? valorEssencialDeCampanha(campanha, busca)
+        : valorMaxListaEssencial(lista, busca);
       out.push({
         nome: rotulo,
-        valor: hit != null ? hit.valor : 0,
-        formato: hit?.formato || formatoPadraoMetrica(busca),
-        origem: hit?.origem || 'painel_fixo',
+        valor,
+        formato: formato || formatoPadraoMetrica(busca),
+        origem: campanha ? 'campanha' : 'painel_fixo',
       });
     }
     return out;
   }
 
   function valorCampanha(c, nomeMetrica, chaveLegado) {
-    const m = (c?.metricas || []).find((x) => x?.nome === nomeMetrica);
-    if (m != null) {
-      const v = Number(m.valor);
-      return Number.isFinite(v) ? v : 0;
-    }
+    const { valor } = valorEssencialDeCampanha(c, nomeMetrica);
+    if (valor > 0) return valor;
     if (chaveLegado && c?.[chaveLegado] != null) {
-      const v = Number(c[chaveLegado]);
-      return Number.isFinite(v) ? v : 0;
+      return parseValorMetrica(c[chaveLegado]);
     }
     return 0;
+  }
+
+  /** Soma as 4 métricas essenciais das campanhas (chave canônica, sem re-filtrar nomes). */
+  function agregarEssenciaisDasCampanhas(campanhas) {
+    const lista = Array.isArray(campanhas) ? campanhas : [];
+    const acum = new Map();
+
+    for (const { busca, rotulo } of METRICAS_EXIBICAO_PAINEL) {
+      acum.set(busca, {
+        nome: rotulo,
+        valor: 0,
+        formato: formatoPadraoMetrica(busca),
+      });
+    }
+
+    for (const c of lista) {
+      for (const { busca } of METRICAS_EXIBICAO_PAINEL) {
+        const { valor, formato } = valorEssencialDeCampanha(c, busca);
+        const fmt = formato || 'numero';
+        if (fmt === 'percentual' || fmt === 'decimal') continue;
+        const slot = acum.get(busca);
+        slot.valor += valor;
+        if (formato) slot.formato = fmt;
+      }
+    }
+
+    return METRICAS_EXIBICAO_PAINEL.map(({ busca }) => {
+      const m = acum.get(busca);
+      return {
+        ...m,
+        valor:
+          m.formato === 'moeda'
+            ? Number(m.valor.toFixed(2))
+            : Math.round(m.valor),
+      };
+    });
   }
 
   /** Campanha com gasto/alcance/impressões ou conversão no período (Meta). */
@@ -221,6 +321,7 @@
     listaEssenciais,
     filtrarEssenciais,
     filtrarEssenciaisResumo,
+    agregarEssenciaisDasCampanhas,
     campanhaTemDadosPeriodo,
     filtrarCampanhasComDados,
     ROTULOS_OBJETIVO,

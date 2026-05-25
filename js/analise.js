@@ -21,7 +21,7 @@
   function metricasCampanha(c) {
     const lista = Array.isArray(c.metricas) ? c.metricas : [];
     if (!TelferMetricas?.filtrarEssenciais) return lista;
-    return TelferMetricas.filtrarEssenciais(lista);
+    return TelferMetricas.filtrarEssenciais(lista, c);
   }
 
   function classeBadgeCriativo(status) {
