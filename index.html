@@ -7,121 +7,139 @@
   <link rel="icon" type="image/png" href="LOGO_V2-PRETOEVERMELHO.png" sizes="32x32" />
   <link rel="apple-touch-icon" href="LOGO_V2-PRETOEVERMELHO.png" />
   <meta name="theme-color" content="#c41e3a" />
-  <link rel="stylesheet" href="css/telfer.css?v=5" />
+  <link rel="stylesheet" href="css/telfer-lovable.css?v=1" />
 </head>
 <body>
   <div class="page">
     <header class="app-header">
       <div class="header-top">
         <div class="brand-lockup">
-          <img
-            class="logo-horizontal"
-            src="logo - horizontal - vermelho e preto.png"
-            alt="Telfer Company"
-            width="260"
-            height="44"
-          />
+          <div class="brand-mark" aria-hidden="true">T</div>
           <div class="brand-copy">
-            <h1>Painel do Cliente</h1>
-            <p>Destaque Odonto Diadema</p>
+            <div class="brand-name">Telfer Company</div>
+            <div class="brand-role">Painel do Cliente</div>
           </div>
         </div>
-        <div class="header-top-end">
-          <a href="analise.html" class="link-nav link-pill">Ver Anúncios da Campanha</a>
-        </div>
-      </div>
-
-      <div class="toolbar-compact">
-        <div class="toolbar-row">
-          <p id="periodoResumo" class="periodo-chip" aria-live="polite"></p>
-          <div class="toolbar-fields">
-            <label class="field field--grow">
-              <span class="field-label">objetivo</span>
-              <div class="field-inline">
-                <select id="objetivoCampanha" class="select select--compact">
-                  <option value="">Todos</option>
-                </select>
-                <button
-                  type="button"
-                  id="refreshObjetivosBtn"
-                  class="btn btn-icon btn-icon--compact"
-                  title="Buscar objetivos ativos na Meta"
-                  aria-label="Atualizar objetivos na Meta"
-                >
-                  ↻
-                </button>
-              </div>
-            </label>
-          </div>
-          <div class="toolbar-actions">
-            <button
-              type="button"
-              id="verUltimoRelatorioBtn"
-              class="btn btn-secondary btn--compact is-hidden"
-            >
-              ver último relatório
-            </button>
-            <button type="button" id="generateBtn" class="btn btn-primary btn--compact">
-              gerar relatório
-            </button>
-          </div>
-        </div>
-        <p id="loading" class="toolbar-feedback status-pill is-hidden" role="status">processando…</p>
-        <div id="alertBanner" class="toolbar-feedback alert is-hidden" role="status"></div>
+        <div class="header-top-end"></div>
       </div>
     </header>
 
-    <section class="section-block">
-      <div class="section-head">
-        <div>
-          <h2 class="section-title">resumo</h2>
-          <p class="section-sub">métricas essenciais do período (soma das campanhas)</p>
-        </div>
-        <!-- <span class="scroll-hint" aria-hidden="true">arraste →</span> -->
-      </div>
-      <div class="kpis-scroll" tabindex="0" aria-label="Métricas resumo — role para o lado">
-        <div class="kpis-track" id="kpisGrid"></div>
-      </div>
+    <section class="client-block">
+      <div class="client-label">cliente</div>
+      <h1 class="client-name">Destaque Odonto</h1>
+      <p id="periodoResumo" class="periodo-chip" aria-live="polite"></p>
     </section>
 
-    <section class="section-block">
-      <div class="section-head">
-        <div>
-          <h2 class="section-title">campanhas</h2>
-          <p class="section-sub">métricas essenciais por objetivo de campanha</p>
-        </div>
+    <div class="chips-bar">
+      <div id="chipsObjetivos" class="chips-row" role="tablist" aria-label="Filtro por objetivo">
+        <button
+          type="button"
+          class="chip chip--active"
+          data-objetivo=""
+          role="tab"
+          aria-selected="true"
+        >todas</button>
       </div>
-      <div id="campanhasContainer" class="campanhas-list"></div>
-    </section>
+      <div class="select-objetivo-wrapper">
+        <label class="field">
+          <span class="field-label">objetivo</span>
+          <select id="objetivoCampanha" class="select">
+            <option value="">Todos</option>
+          </select>
+        </label>
+      </div>
+    </div>
 
-    <section class="section-block">
-      <div class="insights">
-        <div class="insight-card">
-          <h2 class="insight-title">insights</h2>
-          <ul id="insightsList"></ul>
-        </div>
-        <div class="insight-card">
-          <h2 class="insight-title">recomendações</h2>
-          <ul id="recommendationsList"></ul>
-        </div>
+    <nav class="tabs-bar" aria-label="Seções do painel">
+      <div class="tabs-row">
+        <button type="button" class="tab tab--active">resumo</button>
+        <a href="analise.html" class="tab" id="linkAnalise">anúncios</a>
+        <button type="button" class="tab" id="tabAnaliseIa" aria-controls="aiCard">análise ia</button>
       </div>
-    </section>
+    </nav>
+
+    <div class="actions-bar">
+      <button
+        type="button"
+        id="refreshObjetivosBtn"
+        class="chip-refresh"
+        title="Buscar objetivos ativos na Meta"
+        aria-label="Atualizar objetivos na Meta"
+      >↻</button>
+      <div class="actions-spacer"></div>
+      <button
+        type="button"
+        id="verUltimoRelatorioBtn"
+        class="btn btn-secondary is-hidden"
+      >ver último relatório</button>
+      <button
+        type="button"
+        id="voltarPainelBtn"
+        class="btn btn-ghost is-hidden"
+      >voltar</button>
+      <button type="button" id="generateBtn" class="btn btn-primary">gerar relatório</button>
+    </div>
+
+    <output id="loading" class="toolbar-feedback status-pill is-hidden">processando…</output>
+    <output id="alertBanner" class="toolbar-feedback alert is-hidden"></output>
+
+    <main class="content">
+      <section class="section-block">
+        <div class="section-head">
+          <div>
+            <div class="section-title">resumo</div>
+            <div class="section-sub">métricas essenciais do período (soma das campanhas)</div>
+          </div>
+        </div>
+        <div id="kpisGrid" class="kpis-grid"></div>
+      </section>
+
+      <section class="section-block" id="aiCard">
+        <div class="ai-card">
+          <div class="ai-head">
+            <div class="ai-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 3l1.9 5.2L19 10l-5.1 1.8L12 17l-1.9-5.2L5 10l5.1-1.8L12 3z"/>
+                <path d="M5 3v3M3 4.5h4M19 17v3M17 18.5h4"/>
+              </svg>
+            </div>
+            <div class="ai-title">análise por ia</div>
+          </div>
+          <div class="ai-body">
+            <div class="ai-section">
+              <div class="ai-section-title">insights</div>
+              <ul id="insightsList"></ul>
+              <p id="insightsEmpty" class="ai-empty is-hidden">Gere um relatório para ver os insights gerados pela IA.</p>
+            </div>
+            <div class="ai-section">
+              <div class="ai-section-title">recomendações</div>
+              <ul id="recommendationsList"></ul>
+              <p id="recommendationsEmpty" class="ai-empty is-hidden">Gere um relatório para ver as recomendações.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-block">
+        <div class="section-head">
+          <div>
+            <div class="section-title">campanhas</div>
+            <div class="section-sub">métricas essenciais por objetivo de campanha</div>
+          </div>
+        </div>
+        <div id="campanhasContainer" class="campanhas-list"></div>
+      </section>
+    </main>
 
     <footer class="footer">
-      <img
-        class="logo-horizontal footer-logo"
-        src="logo - horizontal - vermelho e preto.png"
-        alt="Telfer Company"
-        width="180"
-        height="28"
-      />
-      <span>telfer performance intelligence © 2026</span>
+      <span>painel by Telfer Company · telfer performance intelligence © 2026</span>
     </footer>
   </div>
 
   <script src="telfer-storage.js"></script>
   <script src="js/runtime-config.js"></script>
   <script src="js/telfer-metricas.js?v=3"></script>
-  <script src="js/index.js?v=4"></script>
+  <script src="js/index.js?v=6"></script>
+  <script src="js/chips-objetivo.js?v=1"></script>
 </body>
 </html>

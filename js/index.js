@@ -303,6 +303,19 @@
     el.textContent = `${formatarDataBr(p.data_inicio)} – ${formatarDataBr(p.data_fim)} · ${dias} dia${dias !== 1 ? 's' : ''} (última semana)`;
   }
 
+  function htmlCardKpi(m) {
+    return (
+      '<div class="kpi-card">' +
+      '<div class="kpi-label">' + escHtml(String(m.nome || '').toLowerCase()) + '</div>' +
+      '<div class="kpi-value">' + escHtml(formatarMetrica(m)) + '</div>' +
+      '</div>'
+    );
+  }
+
+  function htmlKpiEmpty(texto) {
+    return '<div class="kpi-empty">' + escHtml(texto || 'Sem dados') + '</div>';
+  }
+
   function htmlListaMetricas(metricas) {
     if (!metricas.length) {
       return '<p class="text-muted">Sem métricas neste período.</p>';
@@ -980,16 +993,10 @@
         const kpisGrid = document.getElementById('kpisGrid');
         kpisGrid.innerHTML = '';
         for (const m of resumoDireto) {
-          kpisGrid.innerHTML += `
-            <div class="card card-kpi">
-              <div class="card-title">${escHtml(m.nome)}</div>
-              <div class="card-value">${escHtml(formatarMetrica(m))}</div>
-            </div>
-          `;
+          kpisGrid.innerHTML += htmlCardKpi(m);
         }
       } else {
-        document.getElementById('kpisGrid').innerHTML =
-          '<div class="card card-kpi"><div class="card-title">Sem dados</div><div class="card-value">Gere o relatório</div></div>';
+        document.getElementById('kpisGrid').innerHTML = htmlKpiEmpty('Gere o relatório para ver as métricas.');
       }
       document.getElementById('campanhasContainer').innerHTML =
         '<p class="text-muted">Nenhuma campanha no JSON — só resumo/KPIs.</p>';
@@ -999,8 +1006,7 @@
 
     if (!campanhas.length) {
       atualizarPeriodoResumo();
-      document.getElementById('kpisGrid').innerHTML =
-        '<div class="card card-kpi"><div class="card-title">Sem dados no período</div><div class="card-value">—</div></div>';
+      document.getElementById('kpisGrid').innerHTML = htmlKpiEmpty('Nenhuma campanha com dados nos últimos 7 dias.');
       document.getElementById('campanhasContainer').innerHTML =
         '<p class="text-muted">Nenhuma campanha com dados nos últimos 7 dias.</p>';
       const insightsList = document.getElementById('insightsList');
@@ -1037,16 +1043,10 @@
     const kpisGrid = document.getElementById('kpisGrid');
     kpisGrid.innerHTML = '';
     for (const m of resumo) {
-      kpisGrid.innerHTML += `
-        <div class="card card-kpi">
-          <div class="card-title">${escHtml(m.nome)}</div>
-          <div class="card-value">${escHtml(formatarMetrica(m))}</div>
-        </div>
-      `;
+      kpisGrid.innerHTML += htmlCardKpi(m);
     }
     if (!kpisGrid.innerHTML) {
-      kpisGrid.innerHTML =
-        '<div class="card card-kpi"><div class="card-title">Aguardando dados</div><div class="card-value">—</div></div>';
+      kpisGrid.innerHTML = htmlKpiEmpty('Aguardando dados…');
     }
 
     const container = document.getElementById('campanhasContainer');
@@ -1063,7 +1063,7 @@
               : 'critica';
       const metricas = metricasDaCampanha(c);
       const obj = c.objetivo
-        ? `<div class="objetivo-tag">Objetivo: ${escHtml(rotuloObjetivoExibicao(c.objetivo, c.nome))}</div>`
+        ? `<div class="objetivo-tag">${escHtml(rotuloObjetivoExibicao(c.objetivo, c.nome))}</div>`
         : '';
       const score =
         c.score != null
