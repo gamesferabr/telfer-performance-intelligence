@@ -9,11 +9,15 @@
     const q = new URLSearchParams(window.location.search).get('test');
     if (q === '1') return true;
     if (q === '0') return false;
+    const { protocol, hostname } = window.location;
+    const hostPages =
+      hostname === 'gamesferabr.github.io' ||
+      hostname.endsWith('.github.io');
+    if (hostPages) return false;
     if (window.TELFER_CONFIG?.webhookMode === 'test') return true;
     if (window.TELFER_CONFIG?.webhookMode === 'prod') return false;
-    const { protocol, hostname } = window.location;
-    if (protocol === 'file:') return true;
-    if (hostname === 'localhost' || hostname === '127.0.0.1') return true;
+    if (protocol === 'file:') return false;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') return false;
     return false;
   }
 
@@ -23,6 +27,41 @@
     const base = String(cfg.n8nHost).replace(/\/$/, '');
     const segmento = modoWebhookTeste() ? 'webhook-test' : 'webhook';
     return `${base}/${segmento}/${cfg.webhookId}`;
+  }
+
+  function rotuloModoWebhook() {
+    return modoWebhookTeste() ? 'teste (webhook-test)' : 'produção (webhook)';
+  }
+
+  function mensagemErroFetch(err) {
+    const raw = String(err?.message || err || '');
+    const emTeste = modoWebhookTeste();
+    const url = montarUrlWebhook();
+
+    if (raw === 'Failed to fetch' || err?.name === 'TypeError') {
+      if (emTeste) {
+        return (
+          'Não foi possível contactar o n8n em modo TESTE.\n\n' +
+          'O endpoint webhook-test só funciona com o workflow aberto e "Listen for test event" ativo no n8n.\n\n' +
+          'Para usar o site normalmente, abra sem ?test=1 ou use:\n' +
+          (url ? url.replace('/webhook-test/', '/webhook/') : '') +
+          '\n\n(URL atual: ' +
+          (url || '—') +
+          ')'
+        );
+      }
+      return (
+        'Não foi possível contactar o servidor n8n (rede ou CORS).\n\n' +
+        'Confira se o workflow está Published/ativo no n8n e se o painel Easypanel está no ar.\n' +
+        'URL: ' +
+        (url || '—') +
+        '\n\nSe estava a testar com ?test=1, remova esse parâmetro da barra de endereço.'
+      );
+    }
+    if (err?.name === 'AbortError') {
+      return raw;
+    }
+    return raw || 'Erro ao gerar relatório';
   }
 
   function exigirConfig() {
@@ -889,9 +928,11 @@
     const objetivoEscolhido = lerObjetivoSelecionado();
 
     setLoading(true, 'n8n processando (Meta + Claude)…');
+    const urlWebhook = exigirConfig();
     console.log(
       '[Telfer] POST',
-      modoWebhookTeste() ? 'webhook-test' : 'webhook',
+      rotuloModoWebhook(),
+      urlWebhook,
       'objetivo:',
       objetivoEscolhido || 'todos'
     );
@@ -923,7 +964,7 @@
 
       let response;
       try {
-        response = await fetch(exigirConfig(), {
+        response = await fetch(urlWebhook, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1039,7 +1080,7 @@
       reloadBtn.classList.remove('is-hidden');
     } catch (error) {
       mostrarAviso('');
-      alert(error?.message || 'Erro ao gerar relatório');
+      alert(mensagemErroFetch(error));
       console.error('[Telfer] Erro:', error);
     } finally {
       relatorioEmAndamento = false;
