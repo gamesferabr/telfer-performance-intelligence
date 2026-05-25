@@ -133,6 +133,7 @@
     const n = String(nomeMetrica || '').trim();
     const e = String(nomeEssencial || '').trim();
     if (n === e) return true;
+    if (normalizar(n) === normalizar(e)) return true;
     const eLow = e.toLowerCase();
     const nLow = n.toLowerCase();
     if (eLow === 'custo por conversa') {
