@@ -767,7 +767,6 @@
     if (avisos.length) mostrarAviso(avisos.join(' '));
 
     renderDashboard();
-    document.getElementById('reloadBtn').classList.remove('is-hidden');
     return true;
   }
 
@@ -797,11 +796,9 @@
   }
 
   const generateBtn = document.getElementById('generateBtn');
-  const reloadBtn = document.getElementById('reloadBtn');
   const refreshObjetivosBtn = document.getElementById('refreshObjetivosBtn');
 
   generateBtn.addEventListener('click', gerarRelatorio);
-  reloadBtn.addEventListener('click', gerarRelatorio);
   refreshObjetivosBtn.addEventListener('click', () => carregarObjetivosMeta(false));
 
   document.getElementById('objetivoCampanha')?.addEventListener('change', () => {
@@ -831,7 +828,6 @@
     );
 
     generateBtn.disabled = true;
-    reloadBtn.disabled = true;
 
     try {
       const periodo = validarPeriodoRelatorio();
@@ -970,7 +966,6 @@
       renderDashboard();
       console.log('[Telfer] Painel montado:', data.campanhas?.length, 'campanhas');
 
-      reloadBtn.classList.remove('is-hidden');
     } catch (error) {
       mostrarAviso('');
       alert(mensagemErroFetch(error));
@@ -980,7 +975,6 @@
       aplicarObjetivoNoSelect(TelferStorage.loadFilters()?.objetivo ?? lerObjetivoSelecionado());
       setLoading(false);
       generateBtn.disabled = false;
-      reloadBtn.disabled = false;
     }
   }
 
