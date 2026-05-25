@@ -92,7 +92,7 @@
   reconstruirChips();
 
   inicializarPlaceholdersIa();
-  inicializarTabAnaliseIa();
+  inicializarTabs();
   inicializarSpinnerBotao();
 
   function inicializarPlaceholdersIa() {
@@ -115,12 +115,24 @@
     empty.classList.toggle('is-hidden', !vazio);
   }
 
-  function inicializarTabAnaliseIa() {
-    const tab = document.getElementById('tabAnaliseIa');
-    const alvo = document.getElementById('aiCard');
-    if (!tab || !alvo) return;
-    tab.addEventListener('click', () => {
-      alvo.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  function inicializarTabs() {
+    const tabs = document.querySelectorAll('.tabs-row .tab[data-painel]');
+    const paineis = document.querySelectorAll('.painel[id^="painel-"]');
+    if (!tabs.length || !paineis.length) return;
+
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const alvoId = tab.dataset.painel;
+        tabs.forEach((t) => {
+          const ativo = t === tab;
+          t.classList.toggle('tab--active', ativo);
+          t.setAttribute('aria-selected', ativo ? 'true' : 'false');
+        });
+        paineis.forEach((p) => {
+          p.classList.toggle('is-hidden', p.id !== alvoId);
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
     });
   }
 

@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="LOGO_V2-PRETOEVERMELHO.png" sizes="32x32" />
   <link rel="apple-touch-icon" href="LOGO_V2-PRETOEVERMELHO.png" />
   <meta name="theme-color" content="#c41e3a" />
-  <link rel="stylesheet" href="css/telfer-lovable.css?v=4" />
+  <link rel="stylesheet" href="css/telfer-lovable.css?v=5" />
 </head>
 <body>
   <div class="page">
@@ -56,10 +56,10 @@
     </div>
 
     <nav class="tabs-bar" aria-label="Seções do painel">
-      <div class="tabs-row">
-        <button type="button" class="tab tab--active">resumo</button>
-        <a href="analise.html" class="tab" id="linkAnalise">anúncios</a>
-        <button type="button" class="tab" id="tabAnaliseIa" aria-controls="aiCard">análise ia</button>
+      <div class="tabs-row" role="tablist">
+        <button type="button" class="tab tab--active" data-painel="painel-resumo" role="tab" aria-selected="true">resumo</button>
+        <button type="button" class="tab" data-painel="painel-anuncios" role="tab" aria-selected="false">anúncios</button>
+        <button type="button" class="tab" data-painel="painel-analise-ia" role="tab" aria-selected="false">análise ia</button>
       </div>
     </nav>
 
@@ -106,50 +106,66 @@
     <output id="alertBanner" class="toolbar-feedback alert is-hidden"></output>
 
     <main class="content">
-      <section class="section-block">
-        <div class="section-head">
-          <div>
-            <div class="section-title">resumo</div>
-            <div class="section-sub">métricas essenciais do período (soma das campanhas)</div>
+      <section class="painel" id="painel-resumo" role="tabpanel" aria-labelledby="tab-resumo">
+        <div class="section-block">
+          <div class="section-head">
+            <div>
+              <div class="section-title">resumo</div>
+              <div class="section-sub">métricas essenciais do período (soma das campanhas)</div>
+            </div>
           </div>
+          <div id="kpisGrid" class="kpis-grid"></div>
         </div>
-        <div id="kpisGrid" class="kpis-grid"></div>
-      </section>
 
-      <section class="section-block" id="aiCard">
-        <div class="ai-card">
-          <div class="ai-head">
-            <div class="ai-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 3l1.9 5.2L19 10l-5.1 1.8L12 17l-1.9-5.2L5 10l5.1-1.8L12 3z"/>
-                <path d="M5 3v3M3 4.5h4M19 17v3M17 18.5h4"/>
-              </svg>
-            </div>
-            <div class="ai-title">análise por ia</div>
-          </div>
-          <div class="ai-body">
-            <div class="ai-section">
-              <div class="ai-section-title">insights</div>
-              <ul id="insightsList"></ul>
-              <p id="insightsEmpty" class="ai-empty is-hidden">Gere um relatório para ver os insights gerados pela IA.</p>
-            </div>
-            <div class="ai-section">
-              <div class="ai-section-title">recomendações</div>
-              <ul id="recommendationsList"></ul>
-              <p id="recommendationsEmpty" class="ai-empty is-hidden">Gere um relatório para ver as recomendações.</p>
+        <div class="section-block">
+          <div class="section-head">
+            <div>
+              <div class="section-title">campanhas</div>
+              <div class="section-sub">métricas essenciais por objetivo de campanha</div>
             </div>
           </div>
+          <div id="campanhasContainer" class="campanhas-list"></div>
         </div>
       </section>
 
-      <section class="section-block">
-        <div class="section-head">
-          <div>
-            <div class="section-title">campanhas</div>
-            <div class="section-sub">métricas essenciais por objetivo de campanha</div>
+      <section class="painel is-hidden" id="painel-anuncios" role="tabpanel" aria-labelledby="tab-anuncios">
+        <div class="section-block">
+          <div class="section-head">
+            <div>
+              <div class="section-title">anúncios</div>
+              <div class="section-sub">criativos por campanha</div>
+            </div>
+          </div>
+          <div id="anunciosContainer"></div>
+        </div>
+      </section>
+
+      <section class="painel is-hidden" id="painel-analise-ia" role="tabpanel" aria-labelledby="tab-analise-ia">
+        <div class="section-block" id="aiCard">
+          <div class="ai-card">
+            <div class="ai-head">
+              <div class="ai-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 3l1.9 5.2L19 10l-5.1 1.8L12 17l-1.9-5.2L5 10l5.1-1.8L12 3z"/>
+                  <path d="M5 3v3M3 4.5h4M19 17v3M17 18.5h4"/>
+                </svg>
+              </div>
+              <div class="ai-title">análise por ia</div>
+            </div>
+            <div class="ai-body">
+              <div class="ai-section">
+                <div class="ai-section-title">insights</div>
+                <ul id="insightsList"></ul>
+                <p id="insightsEmpty" class="ai-empty is-hidden">Gere um relatório para ver os insights gerados pela IA.</p>
+              </div>
+              <div class="ai-section">
+                <div class="ai-section-title">recomendações</div>
+                <ul id="recommendationsList"></ul>
+                <p id="recommendationsEmpty" class="ai-empty is-hidden">Gere um relatório para ver as recomendações.</p>
+              </div>
+            </div>
           </div>
         </div>
-        <div id="campanhasContainer" class="campanhas-list"></div>
       </section>
     </main>
 
@@ -181,7 +197,9 @@
   <script src="telfer-storage.js"></script>
   <script src="js/runtime-config.js"></script>
   <script src="js/telfer-metricas.js?v=3"></script>
-  <script src="js/index.js?v=8"></script>
-  <script src="js/chips-objetivo.js?v=3"></script>
+  <script src="js/media-utils.js"></script>
+  <script src="js/index.js?v=9"></script>
+  <script src="js/painel-anuncios.js?v=1"></script>
+  <script src="js/chips-objetivo.js?v=4"></script>
 </body>
 </html>

@@ -825,6 +825,7 @@
 
     mostrarAviso('Painel limpo. Se quiser, clique em gerar relatório.');
     atualizarBotaoUltimoRelatorio();
+    window.dispatchEvent(new CustomEvent('telfer:dashboard-cleared'));
   }
 
   function abrirModalConfirmacao({ titulo, descricao, onConfirm }) {
@@ -1180,6 +1181,7 @@
       });
     }
 
+    window.dispatchEvent(new CustomEvent('telfer:dashboard-updated'));
   }
 
   inicializarPeriodo();
