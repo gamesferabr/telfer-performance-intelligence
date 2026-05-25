@@ -92,6 +92,13 @@
     loadSavedAt() {
       return read(KEYS.SAVED_AT);
     },
+
+    clearDashboard() {
+      for (const key of [KEYS.DASHBOARD, KEYS.SAVED_AT]) {
+        try { localStorage.removeItem(key); } catch (e) { /* ignore */ }
+        try { sessionStorage.removeItem(key); } catch (e) { /* ignore */ }
+      }
+    },
   };
 
   global.TelferStorage = TelferStorage;

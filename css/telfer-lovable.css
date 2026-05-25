@@ -834,6 +834,72 @@ a {
   display: none !important;
 }
 
+/* —— Modal de confirmação (usa <dialog> nativo) —— */
+
+.modal {
+  border: none;
+  padding: 0;
+  background: transparent;
+  max-width: 380px;
+  width: calc(100% - 32px);
+  border-radius: var(--radius-xl);
+  overflow: visible;
+  color: var(--ink);
+  animation: telfer-modal-pop 0.18s ease-out;
+}
+
+.modal::backdrop {
+  background: rgba(28, 25, 23, 0.45);
+  backdrop-filter: blur(2px);
+  animation: telfer-modal-fade 0.18s ease-out;
+}
+
+.modal-card {
+  background: var(--surface);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  box-shadow: 0 24px 60px rgba(28, 25, 23, 0.25);
+  padding: 22px 22px 18px;
+  margin: 0;
+}
+
+.modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  margin-bottom: 6px;
+}
+
+.modal-desc {
+  font-size: 13px;
+  color: var(--ink-soft);
+  line-height: 1.55;
+  margin-bottom: 18px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@keyframes telfer-modal-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes telfer-modal-pop {
+  from { transform: translateY(6px) scale(0.98); opacity: 0; }
+  to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* botão limpar (ícone) */
+.chip-refresh svg {
+  width: 15px;
+  height: 15px;
+}
+
 /* —— Footer —— */
 
 .footer {

@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="LOGO_V2-PRETOEVERMELHO.png" sizes="32x32" />
   <link rel="apple-touch-icon" href="LOGO_V2-PRETOEVERMELHO.png" />
   <meta name="theme-color" content="#c41e3a" />
-  <link rel="stylesheet" href="css/telfer-lovable.css?v=3" />
+  <link rel="stylesheet" href="css/telfer-lovable.css?v=4" />
 </head>
 <body>
   <div class="page">
@@ -66,11 +66,25 @@
     <div class="actions-bar">
       <button
         type="button"
-        id="refreshObjetivosBtn"
+        id="limparDashboardBtn"
         class="chip-refresh"
-        title="Buscar objetivos ativos na Meta"
-        aria-label="Atualizar objetivos na Meta"
-      >↻</button>
+        title="Limpar painel (apaga relatório local)"
+        aria-label="Limpar painel"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+          <path d="M10 11v6M14 11v6"/>
+          <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
+        </svg>
+      </button>
+      <button
+        type="button"
+        id="refreshObjetivosBtn"
+        class="is-hidden"
+        aria-hidden="true"
+        tabindex="-1"
+      ></button>
       <div class="actions-spacer"></div>
       <button
         type="button"
@@ -139,6 +153,19 @@
       </section>
     </main>
 
+    <dialog id="confirmModal" class="modal" aria-labelledby="confirmModalTitle" aria-describedby="confirmModalDesc">
+      <form method="dialog" class="modal-card">
+        <h2 id="confirmModalTitle" class="modal-title">Limpar painel?</h2>
+        <p id="confirmModalDesc" class="modal-desc">
+          Isso apaga o relatório salvo neste navegador. Você poderá gerar outro relatório a qualquer momento.
+        </p>
+        <div class="modal-actions">
+          <button type="button" id="confirmModalCancel" class="btn btn-secondary">Cancelar</button>
+          <button type="button" id="confirmModalOk" class="btn btn-primary">Sim, limpar</button>
+        </div>
+      </form>
+    </dialog>
+
     <footer class="footer">
       <img
         class="footer-logo"
@@ -154,7 +181,7 @@
   <script src="telfer-storage.js"></script>
   <script src="js/runtime-config.js"></script>
   <script src="js/telfer-metricas.js?v=3"></script>
-  <script src="js/index.js?v=7"></script>
+  <script src="js/index.js?v=8"></script>
   <script src="js/chips-objetivo.js?v=3"></script>
 </body>
 </html>

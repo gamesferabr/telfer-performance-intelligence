@@ -785,6 +785,7 @@
   const generateBtn = document.getElementById('generateBtn');
   const verUltimoRelatorioBtn = document.getElementById('verUltimoRelatorioBtn');
   const refreshObjetivosBtn = document.getElementById('refreshObjetivosBtn');
+  const limparDashboardBtn = document.getElementById('limparDashboardBtn');
 
   generateBtn.addEventListener('click', gerarRelatorio);
   verUltimoRelatorioBtn.addEventListener('click', () => {
@@ -792,7 +793,77 @@
       alert('Não há relatório salvo neste navegador. Use "gerar relatório".');
     }
   });
-  refreshObjetivosBtn.addEventListener('click', () => carregarObjetivosMeta(false));
+  refreshObjetivosBtn?.addEventListener('click', () => carregarObjetivosMeta(false));
+  limparDashboardBtn?.addEventListener('click', abrirModalLimparDashboard);
+
+  function abrirModalLimparDashboard() {
+    if (!TelferStorage.hasDashboard() && data == null) {
+      mostrarAviso('O painel já está vazio. Clique em gerar relatório quando quiser.');
+      return;
+    }
+    abrirModalConfirmacao({
+      titulo: 'Limpar painel?',
+      descricao: 'Isso apaga o relatório salvo neste navegador. Você poderá gerar outro relatório a qualquer momento.',
+      onConfirm: limparDashboard,
+    });
+  }
+
+  function limparDashboard() {
+    TelferStorage.clearDashboard();
+    data = null;
+
+    document.getElementById('kpisGrid').innerHTML = htmlKpiEmpty(
+      'Painel limpo. Clique em gerar relatório quando quiser.'
+    );
+    document.getElementById('campanhasContainer').innerHTML =
+      '<p class="text-muted">Nenhuma campanha carregada. Gere um relatório para começar.</p>';
+
+    const insightsList = document.getElementById('insightsList');
+    if (insightsList) insightsList.innerHTML = '';
+    const recommendationsList = document.getElementById('recommendationsList');
+    if (recommendationsList) recommendationsList.innerHTML = '';
+
+    mostrarAviso('Painel limpo. Se quiser, clique em gerar relatório.');
+    atualizarBotaoUltimoRelatorio();
+  }
+
+  function abrirModalConfirmacao({ titulo, descricao, onConfirm }) {
+    const modal = document.getElementById('confirmModal');
+    if (!modal || typeof modal.showModal !== 'function') {
+      if (window.confirm(`${titulo}\n\n${descricao}`)) onConfirm?.();
+      return;
+    }
+
+    const tituloEl = document.getElementById('confirmModalTitle');
+    const descEl = document.getElementById('confirmModalDesc');
+    const okBtn = document.getElementById('confirmModalOk');
+    const cancelBtn = document.getElementById('confirmModalCancel');
+    if (tituloEl) tituloEl.textContent = titulo;
+    if (descEl) descEl.textContent = descricao;
+
+    function fechar() {
+      if (modal.open) modal.close();
+      okBtn.removeEventListener('click', onConfirmar);
+      cancelBtn.removeEventListener('click', fechar);
+      modal.removeEventListener('click', onClickFora);
+    }
+
+    function onConfirmar() {
+      fechar();
+      onConfirm?.();
+    }
+
+    function onClickFora(e) {
+      if (e.target === modal) fechar();
+    }
+
+    okBtn.addEventListener('click', onConfirmar);
+    cancelBtn.addEventListener('click', fechar);
+    modal.addEventListener('click', onClickFora);
+
+    modal.showModal();
+    okBtn.focus();
+  }
 
   document.getElementById('objetivoCampanha')?.addEventListener('change', () => {
     persistirFiltrosNaSessao();
