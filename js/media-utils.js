@@ -111,6 +111,25 @@
     };
   }
 
+  function linkPreviewCriativo(cr) {
+    const row = normalizarCriativo(cr) || cr;
+    if (!row) return null;
+    const urls = urlsCriativo(row);
+    const candidatos = [
+      row.permalink,
+      row.preview_url,
+      row.image_url,
+      row.url_imagem,
+      urls.primary,
+      urls.fallback,
+      urls.thumbRaw,
+    ].filter(Boolean);
+    if (row.video_id) {
+      candidatos.unshift(`https://www.facebook.com/watch/?v=${row.video_id}`);
+    }
+    return candidatos[0] || null;
+  }
+
   function onImgError(img) {
     if (!img) return;
 
@@ -140,6 +159,7 @@
     normalizarCriativo,
     ampliarUrlFacebook,
     urlsCriativo,
+    linkPreviewCriativo,
     onImgError,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -285,7 +285,21 @@
   }
 
   function metricasDaCampanha(c) {
-    if (Array.isArray(c.metricas) && c.metricas.length) return c.metricas;
+    const brutas =
+      Array.isArray(c.metricas) && c.metricas.length
+        ? c.metricas
+        : metricasLegado(c);
+    if (TelferMetricas?.filtrarEssenciais) {
+      return TelferMetricas.filtrarEssenciais(
+        brutas,
+        c.objetivo || c.objective,
+        c.nome || c.campanha
+      );
+    }
+    return brutas;
+  }
+
+  function metricasLegado(c) {
     const legado = [];
     if (c.spend != null)
       legado.push({ nome: 'Valor investido', valor: c.spend, formato: 'moeda' });
@@ -297,6 +311,33 @@
     if (c.ctr != null) legado.push({ nome: 'CTR', valor: c.ctr, formato: 'percentual' });
     if (c.cpm != null) legado.push({ nome: 'CPM', valor: c.cpm, formato: 'moeda' });
     return legado;
+  }
+
+  function rotuloObjetivoExibicao(objetivo, nomeCampanha) {
+    if (!objetivo) return '';
+    return TelferMetricas?.rotuloObjetivo
+      ? TelferMetricas.rotuloObjetivo(objetivo, nomeCampanha)
+      : objetivo;
+  }
+
+  function formatarDataBr(iso) {
+    const n = normalizarDataIso(iso);
+    if (!n) return '—';
+    const [y, m, d] = n.split('-');
+    return `${d}/${m}/${y}`;
+  }
+
+  function atualizarPeriodoResumo() {
+    const el = document.getElementById('periodoResumo');
+    if (!el) return;
+    const ini = document.getElementById('dataInicio')?.value;
+    const fim = document.getElementById('dataFim')?.value;
+    if (!ini || !fim) {
+      el.textContent = `Janela de ${PERIODO_MAX_DIAS} dias`;
+      return;
+    }
+    const dias = diasNoPeriodo(ini, fim);
+    el.textContent = `${formatarDataBr(ini)} – ${formatarDataBr(fim)} · ${dias} dia${dias !== 1 ? 's' : ''}`;
   }
 
   function htmlListaMetricas(metricas) {
@@ -663,7 +704,10 @@
       const nomes = Array.isArray(item.campanhas_nomes)
         ? item.campanhas_nomes.join('\n')
         : '';
-      opt.textContent = (item.value || item.label) + qtd;
+      const rotulo = TelferMetricas?.rotuloObjetivo
+        ? TelferMetricas.rotuloObjetivo(item.value, '')
+        : item.value || item.label;
+      opt.textContent = rotulo + qtd;
       if (nomes) opt.title = nomes;
       sel.appendChild(opt);
     }
@@ -812,9 +856,13 @@
   reloadBtn.addEventListener('click', gerarRelatorio);
   refreshObjetivosBtn.addEventListener('click', () => carregarObjetivosMeta(false));
 
-  document.getElementById('objetivoCampanha')?.addEventListener('change', persistirFiltrosNaSessao);
+  document.getElementById('objetivoCampanha')?.addEventListener('change', () => {
+    persistirFiltrosNaSessao();
+    if (data) renderDashboard();
+  });
   function onAlteracaoData(origem) {
     sincronizarPeriodoDatas(origem);
+    atualizarPeriodoResumo();
     persistirFiltrosNaSessao();
   }
   const elDataIni = document.getElementById('dataInicio');
@@ -1027,14 +1075,11 @@
       }
       document.getElementById('campanhasContainer').innerHTML =
         '<p class="text-muted">Nenhuma campanha no JSON — só resumo/KPIs.</p>';
-      document.getElementById('date').textContent = new Date().toLocaleDateString('pt-BR');
+      atualizarPeriodoResumo();
       return;
     }
 
     function agregarResumo() {
-      if (Array.isArray(kpis.metricas_resumo) && kpis.metricas_resumo.length) {
-        return kpis.metricas_resumo;
-      }
       const map = new Map();
       for (const c of campanhas) {
         for (const m of metricasDaCampanha(c)) {
@@ -1044,15 +1089,20 @@
           map.get(m.nome).valor += Number(m.valor) || 0;
         }
       }
-      return [...map.values()].map((m) => ({
+      const somado = [...map.values()].map((m) => ({
         ...m,
         valor: m.formato === 'moeda' ? Number(m.valor.toFixed(2)) : m.valor,
       }));
+      const objetivoFiltro = lerObjetivoSelecionado();
+      if (TelferMetricas?.filtrarEssenciaisResumo) {
+        return TelferMetricas.filtrarEssenciaisResumo(somado, objetivoFiltro, campanhas);
+      }
+      return somado;
     }
 
     const resumo = agregarResumo();
 
-    document.getElementById('date').textContent = new Date().toLocaleDateString('pt-BR');
+    atualizarPeriodoResumo();
 
     const kpisGrid = document.getElementById('kpisGrid');
     kpisGrid.innerHTML = '';
@@ -1083,7 +1133,7 @@
               : 'critica';
       const metricas = metricasDaCampanha(c);
       const obj = c.objetivo
-        ? `<div class="objetivo-tag">Objetivo: ${escHtml(c.objetivo)}</div>`
+        ? `<div class="objetivo-tag">Objetivo: ${escHtml(rotuloObjetivoExibicao(c.objetivo, c.nome))}</div>`
         : '';
       const score =
         c.score != null
@@ -1132,6 +1182,7 @@
   }
 
   defaultsDatas();
+  atualizarPeriodoResumo();
 
   (async function init() {
     const tinhaRelatorio = restaurarRelatorioSalvo();

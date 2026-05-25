@@ -11,18 +11,51 @@
       .replace(/"/g, '&quot;');
   }
 
+  function rotuloObjetivo(objetivo, nome) {
+    if (!objetivo) return '';
+    return TelferMetricas?.rotuloObjetivo
+      ? TelferMetricas.rotuloObjetivo(objetivo, nome)
+      : objetivo;
+  }
+
+  function metricasCampanha(c) {
+    const lista = Array.isArray(c.metricas) ? c.metricas : [];
+    if (!TelferMetricas?.filtrarEssenciais) return lista;
+    return TelferMetricas.filtrarEssenciais(
+      lista,
+      c.objetivo || c.objective,
+      c.nome || c.name || c.campanha
+    );
+  }
+
+  function htmlMidiaCriativo(cr) {
+    const urls = TelferMedia.urlsCriativo(cr);
+    if (urls.isVideo) {
+      const href = TelferMedia.linkPreviewCriativo(cr);
+      if (href) {
+        return (
+          '<div class="criativo-media criativo-media--link">' +
+          '<span class="criativo-tag-video">vídeo</span>' +
+          '<a class="criativo-video-link" href="' +
+          esc(href) +
+          '" target="_blank" rel="noopener noreferrer">Abrir criativo ↗</a>' +
+          '</div>'
+        );
+      }
+      return (
+        '<div class="criativo-media criativo-media--sem-url">' +
+        '<span class="criativo-tag-video">vídeo</span>' +
+        '<span class="criativo-sem-preview">Link do vídeo indisponível — regenere o relatório.</span>' +
+        '</div>'
+      );
+    }
+    return htmlImagemCriativo(cr);
+  }
+
   function htmlImagemCriativo(cr) {
     const urls = TelferMedia.urlsCriativo(cr);
     const src = urls.primary || urls.thumbRaw || urls.fallback;
     if (!src) {
-      if (urls.isVideo) {
-        return (
-          '<div class="criativo-media criativo-media--sem-url">' +
-          '<span class="criativo-tag-video">vídeo</span>' +
-          '<span class="criativo-sem-preview">Preview indisponível na Meta — regenere o relatório após importar o workflow novo.</span>' +
-          '</div>'
-        );
-      }
       return '';
     }
 
@@ -78,7 +111,8 @@
     }
 
     if (filters && filters.objetivo) {
-      objEl.textContent = 'Objetivo filtrado: ' + filters.objetivo;
+      objEl.textContent =
+        'Objetivo: ' + rotuloObjetivo(filters.objetivo, '');
     } else {
       objEl.textContent = 'Objetivo: todos';
     }
@@ -92,7 +126,8 @@
 
     let html = '';
     for (const c of campanhas) {
-      const nome = esc(c.nome ?? c.name ?? 'Campanha');
+      const nomeRaw = c.nome ?? c.name ?? 'Campanha';
+      const nome = esc(nomeRaw);
       const objetivo = c.objetivo ?? c.objective ?? null;
       const rawCriativos = Array.isArray(c.criativos)
         ? c.criativos
@@ -107,10 +142,12 @@
       html += '<h2>' + nome + '</h2>';
       if (objetivo) {
         html +=
-          '<div class="objetivo">Objetivo Meta: <code>' + esc(objetivo) + '</code></div>';
+          '<div class="objetivo">Objetivo: <strong>' +
+          esc(rotuloObjetivo(objetivo, nomeRaw)) +
+          '</strong></div>';
       }
 
-      const metricas = Array.isArray(c.metricas) ? c.metricas : [];
+      const metricas = metricasCampanha(c);
       if (metricas.length) {
         html += '<div class="metricas-panel">';
         html += '<span class="metricas-label">Métricas essenciais</span>';
@@ -147,7 +184,7 @@
           const adId = cr.ad_id ?? cr.id ?? '';
           const status = cr.status_effective ?? cr.status ?? '';
           html += '<div class="criativo">';
-          html += htmlImagemCriativo(cr);
+          html += htmlMidiaCriativo(cr);
           html += '<div class="criativo-body">';
           html += '<div class="nome">' + cn + '</div>';
           if (adId) html += '<div class="sub">ID anúncio: ' + esc(adId) + '</div>';

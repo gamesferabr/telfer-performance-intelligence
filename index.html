@@ -27,31 +27,31 @@
           </div>
         </div>
         <div class="header-top-end">
-          <time id="date" class="report-date"></time>
           <a href="analise.html" class="link-nav link-pill">análise de criativos</a>
         </div>
       </div>
 
-      <div class="control-panel">
-        <div class="control-grid">
-          <label class="field">
-            <span class="field-label">data início</span>
-            <input type="date" id="dataInicio" class="input" />
+      <div class="toolbar-compact">
+        <p id="periodoResumo" class="periodo-chip" aria-live="polite"></p>
+        <div class="toolbar-fields">
+          <label class="field field--compact">
+            <span class="field-label">início</span>
+            <input type="date" id="dataInicio" class="input input--compact" />
           </label>
-          <label class="field">
-            <span class="field-label">data fim</span>
-            <input type="date" id="dataFim" class="input" />
+          <label class="field field--compact">
+            <span class="field-label">fim</span>
+            <input type="date" id="dataFim" class="input input--compact" />
           </label>
-          <label class="field field-span-2">
-            <span class="field-label">objetivo campanha</span>
+          <label class="field field--grow">
+            <span class="field-label">objetivo</span>
             <div class="field-inline">
-              <select id="objetivoCampanha" class="select">
+              <select id="objetivoCampanha" class="select select--compact">
                 <option value="">Todos</option>
               </select>
               <button
                 type="button"
                 id="refreshObjetivosBtn"
-                class="btn btn-icon"
+                class="btn btn-icon btn-icon--compact"
                 title="Buscar objetivos ativos na Meta"
                 aria-label="Atualizar objetivos na Meta"
               >
@@ -60,19 +60,16 @@
             </div>
           </label>
         </div>
-
-        <div class="control-actions">
-          <button type="button" id="generateBtn" class="btn btn-primary">
+        <div class="toolbar-actions">
+          <button type="button" id="generateBtn" class="btn btn-primary btn--compact">
             gerar relatório
           </button>
-          <button type="button" id="reloadBtn" class="btn btn-secondary is-hidden">
-            gerar novo relatório
+          <button type="button" id="reloadBtn" class="btn btn-secondary btn--compact is-hidden">
+            novo
           </button>
           <span id="loading" class="status-pill is-hidden">processando…</span>
         </div>
-
-        <p class="control-hint">Período máximo de 7 dias (alinhado à janela semanal da Meta).</p>
-        <p id="objetivosMeta" class="control-hint"></p>
+        <p id="objetivosMeta" class="toolbar-meta"></p>
       </div>
     </header>
 
@@ -82,7 +79,7 @@
       <div class="section-head">
         <div>
           <h2 class="section-title">resumo</h2>
-          <p class="section-sub">métricas que a Meta retornou</p>
+          <p class="section-sub">métricas essenciais do período (soma das campanhas)</p>
         </div>
         <span class="scroll-hint" aria-hidden="true">arraste →</span>
       </div>
@@ -95,7 +92,7 @@
       <div class="section-head">
         <div>
           <h2 class="section-title">campanhas</h2>
-          <p class="section-sub">métricas por campanha</p>
+          <p class="section-sub">métricas essenciais por objetivo de campanha</p>
         </div>
       </div>
       <div id="campanhasContainer" class="campanhas-list"></div>
@@ -129,6 +126,7 @@
   <script src="telfer-storage.js"></script>
   <script src="js/runtime-config.js"></script>
   <script src="js/config.js"></script>
+  <script src="js/telfer-metricas.js"></script>
   <script src="js/index.js"></script>
 </body>
 </html>
