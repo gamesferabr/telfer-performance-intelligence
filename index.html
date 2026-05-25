@@ -23,7 +23,7 @@
           />
           <div class="brand-copy">
             <h1>Painel do Cliente</h1>
-            <p>destaque odonto diadema</p>
+            <p>Destaque Odonto Diadema</p>
           </div>
         </div>
         <div class="header-top-end">
@@ -54,6 +54,13 @@
             </label>
           </div>
           <div class="toolbar-actions">
+            <button
+              type="button"
+              id="verUltimoRelatorioBtn"
+              class="btn btn-secondary btn--compact is-hidden"
+            >
+              ver último relatório
+            </button>
             <button type="button" id="generateBtn" class="btn btn-primary btn--compact">
               gerar relatório
             </button>
@@ -61,7 +68,6 @@
         </div>
         <p id="loading" class="toolbar-feedback status-pill is-hidden" role="status">processando…</p>
         <div id="alertBanner" class="toolbar-feedback alert is-hidden" role="status"></div>
-        <p id="objetivosMeta" class="toolbar-meta"></p>
       </div>
     </header>
 
@@ -116,6 +122,6 @@
   <script src="telfer-storage.js"></script>
   <script src="js/runtime-config.js"></script>
   <script src="js/telfer-metricas.js?v=3"></script>
-  <script src="js/index.js?v=3"></script>
+  <script src="js/index.js?v=4"></script>
 </body>
 </html>
