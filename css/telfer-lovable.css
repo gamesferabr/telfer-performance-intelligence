@@ -840,6 +840,32 @@ a {
 
 /* —— Painel de anúncios (criativos) —— */
 
+.section-head--wrap {
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.anuncios-filtro-bar {
+  margin-left: auto;
+  max-width: 100%;
+}
+
+.anuncios-filtro-meta {
+  font-size: 11px;
+  color: var(--muted);
+  margin: -4px 0 12px;
+  padding: 0 2px;
+}
+
+.anuncios-filtro-meta.is-hidden {
+  display: none;
+}
+
+.criativo.is-filtered-out {
+  display: none;
+}
+
 .anuncios-campanha {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -1017,6 +1043,18 @@ a {
   background: #ecfdf5;
   color: #047857;
   border-color: #a7f3d0;
+}
+
+.badge--paused {
+  background: #fff7ed;
+  color: #9a3412;
+  border-color: #fed7aa;
+}
+
+.badge--paused-soft {
+  background: var(--bg-muted);
+  color: var(--ink-soft);
+  border-color: var(--border);
 }
 
 .empty--inline {

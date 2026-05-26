@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="LOGO_V2-PRETOEVERMELHO.png" sizes="32x32" />
   <link rel="apple-touch-icon" href="LOGO_V2-PRETOEVERMELHO.png" />
   <meta name="theme-color" content="#c41e3a" />
-  <link rel="stylesheet" href="css/telfer-lovable.css?v=5" />
+  <link rel="stylesheet" href="css/telfer-lovable.css?v=6" />
 </head>
 <body>
   <div class="page">
@@ -130,12 +130,23 @@
 
       <section class="painel is-hidden" id="painel-anuncios" role="tabpanel" aria-labelledby="tab-anuncios">
         <div class="section-block">
-          <div class="section-head">
+          <div class="section-head section-head--wrap">
             <div>
               <div class="section-title">anúncios</div>
               <div class="section-sub">criativos por campanha</div>
             </div>
+            <div
+              id="anunciosFiltroStatus"
+              class="anuncios-filtro-bar chips-row"
+              role="tablist"
+              aria-label="Filtrar anúncios por status"
+            >
+              <button type="button" class="chip chip--active" data-filtro-status="ativos" role="tab" aria-selected="true">ativos</button>
+              <button type="button" class="chip" data-filtro-status="pausados" role="tab" aria-selected="false">pausados</button>
+              <button type="button" class="chip" data-filtro-status="todos" role="tab" aria-selected="false">todos</button>
+            </div>
           </div>
+          <p id="anunciosFiltroMeta" class="anuncios-filtro-meta" aria-live="polite"></p>
           <div id="anunciosContainer"></div>
         </div>
       </section>
@@ -199,7 +210,7 @@
   <script src="js/telfer-metricas.js?v=3"></script>
   <script src="js/media-utils.js"></script>
   <script src="js/index.js?v=9"></script>
-  <script src="js/painel-anuncios.js?v=1"></script>
+  <script src="js/painel-anuncios.js?v=2"></script>
   <script src="js/chips-objetivo.js?v=4"></script>
 </body>
 </html>
