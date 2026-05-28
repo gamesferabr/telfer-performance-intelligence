@@ -757,7 +757,7 @@
     }
   }
 
-  function setLoading(ativo, texto) {
+  function setLoading(ativo) {
     const el = document.getElementById('loading');
     if (loadingTimerId) {
       clearInterval(loadingTimerId);
@@ -766,14 +766,13 @@
     if (ativo) {
       loadingInicioMs = Date.now();
       el.classList.remove('is-hidden');
-      const base = texto || 'processando…';
       const limiteMin = minutosTimeoutLabel();
       const atualizar = () => {
         const s = Math.floor((Date.now() - loadingInicioMs) / 1000);
         const min = Math.floor(s / 60);
         const sec = String(s % 60).padStart(2, '0');
         const decorrido = min > 0 ? `${min}:${sec}` : `0:${sec}`;
-        el.textContent = `${base} (${decorrido} · limite ${limiteMin} min)`;
+        el.textContent = `${decorrido} · limite ${limiteMin} min`;
       };
       atualizar();
       loadingTimerId = setInterval(atualizar, 1000);
@@ -794,19 +793,13 @@
     }
   });
   refreshObjetivosBtn?.addEventListener('click', () => carregarObjetivosMeta(false));
-  limparDashboardBtn?.addEventListener('click', abrirModalLimparDashboard);
-
-  function abrirModalLimparDashboard() {
+  limparDashboardBtn?.addEventListener('click', () => {
     if (!TelferStorage.hasDashboard() && data == null) {
       mostrarAviso('O painel já está vazio. Clique em gerar relatório quando quiser.');
       return;
     }
-    abrirModalConfirmacao({
-      titulo: 'Limpar painel?',
-      descricao: 'Isso apaga o relatório salvo neste navegador. Você poderá gerar outro relatório a qualquer momento.',
-      onConfirm: limparDashboard,
-    });
-  }
+    limparDashboard();
+  });
 
   function limparDashboard() {
     TelferStorage.clearDashboard();
@@ -828,44 +821,6 @@
     window.dispatchEvent(new CustomEvent('telfer:dashboard-cleared'));
   }
 
-  function abrirModalConfirmacao({ titulo, descricao, onConfirm }) {
-    const modal = document.getElementById('confirmModal');
-    if (!modal || typeof modal.showModal !== 'function') {
-      if (window.confirm(`${titulo}\n\n${descricao}`)) onConfirm?.();
-      return;
-    }
-
-    const tituloEl = document.getElementById('confirmModalTitle');
-    const descEl = document.getElementById('confirmModalDesc');
-    const okBtn = document.getElementById('confirmModalOk');
-    const cancelBtn = document.getElementById('confirmModalCancel');
-    if (tituloEl) tituloEl.textContent = titulo;
-    if (descEl) descEl.textContent = descricao;
-
-    function fechar() {
-      if (modal.open) modal.close();
-      okBtn.removeEventListener('click', onConfirmar);
-      cancelBtn.removeEventListener('click', fechar);
-      modal.removeEventListener('click', onClickFora);
-    }
-
-    function onConfirmar() {
-      fechar();
-      onConfirm?.();
-    }
-
-    function onClickFora(e) {
-      if (e.target === modal) fechar();
-    }
-
-    okBtn.addEventListener('click', onConfirmar);
-    cancelBtn.addEventListener('click', fechar);
-    modal.addEventListener('click', onClickFora);
-
-    modal.showModal();
-    okBtn.focus();
-  }
-
   document.getElementById('objetivoCampanha')?.addEventListener('change', () => {
     persistirFiltrosNaSessao();
     if (data) renderDashboard();
@@ -882,7 +837,7 @@
 
     const objetivoEscolhido = lerObjetivoSelecionado();
 
-    setLoading(true, 'n8n processando (Meta + Claude)…');
+    setLoading(true);
     const urlWebhook = exigirConfig();
     console.log(
       '[Telfer] POST',
@@ -941,7 +896,7 @@
         clearTimeout(timeoutId);
       }
 
-      setLoading(true, 'Lendo JSON do n8n…');
+      setLoading(true);
 
       const textoResposta = await response.text();
       console.log('[Telfer] HTTP', response.status, 'bytes', textoResposta?.length ?? 0);
@@ -991,7 +946,7 @@
         );
       }
 
-      setLoading(true, 'Montando painel…');
+      setLoading(true);
 
       const avisos = [];
       if (data._claude_truncated) {

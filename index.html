@@ -102,7 +102,7 @@
       </button>
     </div>
 
-    <output id="loading" class="toolbar-feedback loading-hint is-hidden">processando…</output>
+    <output id="loading" class="toolbar-feedback loading-hint is-hidden" aria-live="polite"></output>
     <output id="alertBanner" class="toolbar-feedback alert is-hidden"></output>
 
     <main class="content">
@@ -180,19 +180,6 @@
       </section>
     </main>
 
-    <dialog id="confirmModal" class="modal" aria-labelledby="confirmModalTitle" aria-describedby="confirmModalDesc">
-      <form method="dialog" class="modal-card">
-        <h2 id="confirmModalTitle" class="modal-title">Limpar painel?</h2>
-        <p id="confirmModalDesc" class="modal-desc">
-          Isso apaga o relatório salvo neste navegador. Você poderá gerar outro relatório a qualquer momento.
-        </p>
-        <div class="modal-actions">
-          <button type="button" id="confirmModalCancel" class="btn btn-secondary">Cancelar</button>
-          <button type="button" id="confirmModalOk" class="btn btn-primary">Sim, limpar</button>
-        </div>
-      </form>
-    </dialog>
-
     <footer class="footer">
       <img
         class="footer-logo"
@@ -209,7 +196,7 @@
   <script src="js/runtime-config.js"></script>
   <script src="js/telfer-metricas.js?v=3"></script>
   <script src="js/media-utils.js"></script>
-  <script src="js/index.js?v=9"></script>
+  <script src="js/index.js?v=10"></script>
   <script src="js/painel-anuncios.js?v=2"></script>
   <script src="js/chips-objetivo.js?v=4"></script>
 </body>
